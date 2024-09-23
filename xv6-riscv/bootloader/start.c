@@ -17,6 +17,7 @@ __attribute__ ((aligned (16))) char bl_stack[STSIZE * NCPU];
 
 /* Context (SHA-256) for secure boot */
 SHA256_CTX sha256_ctx;
+#define SYSINFOADDR 0x80080000
 
 /* Structure to collects system information */
 struct sys_info {
@@ -111,15 +112,32 @@ void start()
   }
   
   /* CSE 536: Load the NORMAL kernel binary (assuming secure boot passed). */
-  // uint64 kernel_load_addr       = find_kernel_load_addr(NORMAL);
-  // uint64 kernel_binary_size     = find_kernel_size(NORMAL);     
+  uint64 kernel_load_addr       = find_kernel_load_addr(NORMAL);
+  uint64 kernel_binary_size     = find_kernel_size(NORMAL);     
   uint64 kernel_entry           = find_kernel_entry_addr(NORMAL);
   
+  struct buf b;
+  for (uint64 offset = 0x1000; offset < kernel_binary_size; offset += BSIZE) {
+    b.blockno = offset / BSIZE;
+    kernel_copy(NORMAL, &b);
+    memmove((void*)(kernel_load_addr + offset), b.data, BSIZE);
+  }
+
   /* CSE 536: Write the correct kernel entry point */
   w_mepc((uint64) kernel_entry);
+
+  sys_info_ptr->bl_start = (uint64) &_start;
+  sys_info_ptr->bl_end = (uint64) &_end;
+  sys_info_ptr->dr_start = 0x80000000; // Example DRAM start address
+  sys_info_ptr->dr_end = 0x88000000;   // Example DRAM end address
  
  out:
   /* CSE 536: Provide system information to the kernel. */
+  sys_info_ptr = (struct sys_info*) SYSINFOADDR;
+  sys_info_ptr->bl_start = (uint64) _start;
+  sys_info_ptr->bl_end = (uint64) end;
+  sys_info_ptr->dr_start = 0x80000000;
+  sys_info_ptr->dr_end = 0x88000000;
 
   /* CSE 536: Send the observed hash value to the kernel (using sys_info_ptr) */
 
