@@ -14,6 +14,7 @@ void timerinit();
 
 /* entry.S needs one stack per CPU */
 __attribute__ ((aligned (16))) char bl_stack[STSIZE * NCPU];
+extern char bl_stack_end;
 
 /* Context (SHA-256) for secure boot */
 SHA256_CTX sha256_ctx;

@@ -42,6 +42,10 @@ SECTIONS
     ebss = .;
   }
 
+  /* Define the end of the stack */
+  . = ALIGN(16);
+  PROVIDE(bl_stack_end = .);
+
   /* End of Entire Program */
   end = .;
 }
