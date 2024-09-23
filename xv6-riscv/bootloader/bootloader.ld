@@ -1,14 +1,14 @@
 OUTPUT_ARCH("riscv")
 
 /* Define the starting address of the bootloader binary */
-bootloader-start = 0x0000000080000000;
+bootloader_start = 0x0000000080000000;
 
 /* Define the entry point */
 ENTRY(_entry)
 
 SECTIONS
 {
-  . = bootloader-start;
+  . = bootloader_start;
 
   /* Text section */
   .text :
