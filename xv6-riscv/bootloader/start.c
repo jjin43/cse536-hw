@@ -33,6 +33,10 @@ struct sys_info {
 };
 struct sys_info* sys_info_ptr;
 
+// From Linker script
+extern char _start[];
+extern char end[];
+
 extern void _entry(void);
 void panic(char *s)
 {
@@ -135,7 +139,7 @@ void start()
   /* CSE 536: Provide system information to the kernel. */
   sys_info_ptr = (struct sys_info*) SYSINFOADDR;
   sys_info_ptr->bl_start = (uint64) _start;
-  sys_info_ptr->bl_end = (uint64) end;
+  sys_info_ptr->bl_end = (uint64) _end;
   sys_info_ptr->dr_start = 0x80000000;
   sys_info_ptr->dr_end = 0x88000000;
 
