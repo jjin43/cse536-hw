@@ -85,9 +85,7 @@ bool is_secure_boot(void) {
    * (simplified template provided below) */
   sha256_init(&sha256_ctx);
   struct buf b;
-  uint64 kernel_load_addr = find_kernel_load_addr(NORMAL);
   uint64 kernel_binary_size = find_kernel_size(NORMAL);     
-  uint64 kernel_entry = find_kernel_entry_addr(NORMAL);
   
   uint64 num_blocks = kernel_binary_size / BSIZE;
   if (kernel_binary_size % BSIZE != 0) {
