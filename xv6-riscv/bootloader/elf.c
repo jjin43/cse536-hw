@@ -5,7 +5,7 @@
 #include "defs.h"
 #include "buf.h"
 #include "elf.h"
-
+#include <stdio.h>
 #include <stdbool.h>
 
 struct elfhdr* kernel_elfhdr;
