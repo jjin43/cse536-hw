@@ -69,7 +69,8 @@ uint64 find_kernel_entry_addr(enum kernel ktype) {
     } else if(ktype == RECOVERY) {
         kernel_elfhdr = (struct elfhdr*)RECOVERYDISK;
     }
-    
+
+    print(kernel_elfhdr->entry, kernel_elfhdr->magic);
     // Retrieve the entry point address from the ELF header
     uint64 entry_addr = kernel_elfhdr->entry;
 
