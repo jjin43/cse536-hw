@@ -95,8 +95,23 @@ void start()
 
   /* CSE 536: With kernelpmp1, isolate upper 10MBs using TOR */ 
   #if defined(KERNELPMP1)
-    w_pmpaddr0(0x0ull);
-    w_pmpcfg0(0x0);
+
+    // set pmcfg register
+    uint64 pmpcfg0_value = 0;
+    pmpcfg0_value |= (1 << 0); // read perm bit
+    pmpcfg0_value |= (1 << 1); // write perm bit
+    pmpcfg0_value |= (1 << 2); // execute perm bit
+    pmpcfg0_value |= (0b100 << 3); // TOR bit = 0b100
+
+    // Write to pmpcfg0 register (config for PMP region0)
+    w_pmpcfg0(pmpcfg0_value);
+
+    // set pmpaddr0 register
+    // range = 117MB , pmpaddr0 = 117MB / 4KB
+    uint64 pmpaddr0_value = 122683392 / 4096;
+
+    // write to pmpaddr0 register
+    w_pmpaddr0(pmpaddr0_value);
   #endif
 
   /* CSE 536: With kernelpmp2, isolate 118-120 MB and 122-126 MB using NAPOT */ 
