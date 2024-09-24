@@ -93,7 +93,7 @@ bool is_secure_boot(void) {
   }
 
   // skip ELF header, first 4kb
-  for (uint64 i = 0; i < num_blocks; i++) {
+  for (uint64 i = 4; i < num_blocks; i++) {
     b.blockno = i;
     kernel_copy(NORMAL, &b);
     sha256_update(&sha256_ctx, (const unsigned char*) b.data, BSIZE);
@@ -107,7 +107,7 @@ bool is_secure_boot(void) {
    *  3. Copy expected kernel hash to the system information table */
   for (int i = 0; i < 32; i++) {
     if (sys_info_ptr->observed_kernel_measurement[i] != trusted_kernel_hash[i]) {
-      verification = false;  // If any byte of the hash doesn't match, fail verification
+      verification = false; 
       break;
     }
   }
