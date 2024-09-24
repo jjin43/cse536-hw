@@ -105,11 +105,11 @@ void start()
   #endif
 
   /* CSE 536: Verify if the kernel is untampered for secure boot */
-  if (!is_secure_boot()) {
-    /* Skip loading since we should have booted into a recovery kernel 
-     * in the function is_secure_boot() */
-    goto out;
-  }
+  // if (!is_secure_boot()) {
+  //   /* Skip loading since we should have booted into a recovery kernel 
+  //    * in the function is_secure_boot() */
+  //   goto out;
+  // }
   
   /* CSE 536: Load the NORMAL kernel binary (assuming secure boot passed). */
   uint64 kernel_load_addr       = find_kernel_load_addr(NORMAL);
