@@ -12,6 +12,8 @@
 void main();
 void timerinit();
 
+extern BYTE trusted_kernel_hash[32];
+
 /* entry.S needs one stack per CPU */
 __attribute__ ((aligned (16))) char bl_stack[STSIZE * NCPU];
 char *bl_stack_end = bl_stack + sizeof(bl_stack);
@@ -46,6 +48,33 @@ void panic(char *s)
 /* CSE 536: Boot into the RECOVERY kernel instead of NORMAL kernel
  * when hash verification fails. */
 void setup_recovery_kernel(void) {
+  uint64 kernel_load_addr = find_kernel_load_addr(RECOVERY);
+  uint64 kernel_binary_size = find_kernel_size(RECOVERY);     
+  uint64 kernel_entry = find_kernel_entry_addr(RECOVERY);
+  
+  struct buf b;
+  uint64 num_blocks = kernel_binary_size / BSIZE;
+  if (kernel_binary_size % BSIZE != 0) {
+    num_blocks++;
+  }
+
+  // skip ELF header, first 4kb
+  for (uint64 i = 4; i < num_blocks; i++) {
+    b.blockno = i;
+    kernel_copy(RECOVERY, &b);
+    uint64 memory_offset = (i - 4) * BSIZE;
+    memmove((void*) (kernel_load_addr + memory_offset), b.data, BSIZE);
+  }
+
+  /* CSE 536: Write the correct kernel entry point */
+  w_mepc((uint64) kernel_entry);
+
+  /* CSE 536: Provide system information to the kernel. */
+  sys_info_ptr = (struct sys_info*) SYSINFOADDR;
+  sys_info_ptr->bl_start = bootloader_start;
+  sys_info_ptr->bl_end = (uint64) end;
+  sys_info_ptr->dr_start = 0x80000000;
+  sys_info_ptr->dr_end = 0x88000000;
 }
 
 /* CSE 536: Function verifies if NORMAL kernel is expected or tampered. */
@@ -56,13 +85,35 @@ bool is_secure_boot(void) {
    * (simplified template provided below) */
   sha256_init(&sha256_ctx);
   struct buf b;
-  sha256_update(&sha256_ctx, (const unsigned char*) b.data, BSIZE);
+  uint64 kernel_load_addr = find_kernel_load_addr(NORMAL);
+  uint64 kernel_binary_size = find_kernel_size(NORMAL);     
+  uint64 kernel_entry = find_kernel_entry_addr(NORMAL);
+  
+  uint64 num_blocks = kernel_binary_size / BSIZE;
+  if (kernel_binary_size % BSIZE != 0) {
+    num_blocks++;
+  }
+
+  // skip ELF header, first 4kb
+  for (uint64 i = 0; i < num_blocks; i++) {
+    b.blockno = i;
+    kernel_copy(NORMAL, &b);
+    sha256_update(&sha256_ctx, (const unsigned char*) b.data, BSIZE);
+  }
+  
   sha256_final(&sha256_ctx, sys_info_ptr->observed_kernel_measurement);
 
   /* Three more tasks required below: 
    *  1. Compare observed measurement with expected hash
    *  2. Setup the recovery kernel if comparison fails
    *  3. Copy expected kernel hash to the system information table */
+  for (int i = 0; i < 32; i++) {
+    if (sys_info_ptr->observed_kernel_measurement[i] != trusted_kernel_hash[i]) {
+      verification = false;  // If any byte of the hash doesn't match, fail verification
+      break;
+    }
+  }
+
   if (!verification)
     setup_recovery_kernel();
   
@@ -97,7 +148,7 @@ void start()
   #if defined(KERNELPMP1)
 
     // set pmcfg register, R=0b000[1], W=0b00[1]0, X=0b0[1]00, A=0b[10]00, 0b1111 = 0xf
-    uint64 cfg_val = 0xf
+    uint64 cfg_val = 0xf;
 
     // Write to pmpcfg0 register (config for PMP region0)
     w_pmpcfg0(cfg_val); 
