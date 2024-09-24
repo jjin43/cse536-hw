@@ -139,8 +139,6 @@ void start()
   sys_info_ptr->bl_end = (uint64) end;
   sys_info_ptr->dr_start = 0x80000000;
   sys_info_ptr->dr_end = 0x88000000;
-  asm volatile("mret");
-
 
  out:
 
