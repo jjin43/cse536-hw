@@ -11,27 +11,29 @@ struct elfhdr* kernel_elfhdr;
 struct proghdr* kernel_phdr;
 
 uint64 find_kernel_load_addr(enum kernel ktype) {
-    // Point an ELF struct to RAMDISK to initialize it with the kernel binary’s ELF header
-    if(ktype == NORMAL) {
+    // Point to the ELF header in RAMDISK or RECOVERYDISK
+    struct elfhdr* kernel_elfhdr;
+    if (ktype == NORMAL) {
         kernel_elfhdr = (struct elfhdr*)RAMDISK;
-    } else if(ktype == RECOVERY) {
+    } else if (ktype == RECOVERY) {
         kernel_elfhdr = (struct elfhdr*)RECOVERYDISK;
     }
 
-    // Retrieve the offset and size of the program headers
-    uint64 phoff = kernel_elfhdr->phoff;
-    uint64 phentsize = kernel_elfhdr->phentsize;
-
-    // Calculate the address of the second program header section
-    uint64 second_phdr_addr = RAMDISK + phoff + phentsize;
-
-    // Point a program header struct to this address to initialize it with the .text section’s header
-    kernel_phdr = (struct proghdr*)second_phdr_addr;
-
-    // Retrieve the starting address of the .text section
-    uint64 kernload_start = kernel_phdr->vaddr;
-
-    return kernload_start;
+    // Retrieve the program header offset and number of program headers
+    struct proghdr* ph = (struct proghdr*)((uint64)kernel_elfhdr + kernel_elfhdr->phoff);
+    
+    // Iterate through program headers to find the one corresponding to the .text section
+    for (int i = 0; i < kernel_elfhdr->phnum; i++, ph++) {
+        // Check if the program header is of type "LOAD" and if it is executable
+        if (ph->type == ELF_PROG_LOAD && (ph->flags & ELF_PROG_FLAG_EXEC)) {
+            // Return the virtual address where the .text section should be loaded
+            return ph->vaddr;  // This is the virtual address for the .text section
+        }
+    }
+    
+    // If no executable section is found, return an error or invalid address
+    panic("No loadable .text section found");
+    return 0;
 }
 
 uint64 find_kernel_size(enum kernel ktype) {
