@@ -123,19 +123,19 @@ void start()
     uint64 addr3_val = ((bootloader_start + 126*1024*1024) >> 2 ) + (((2*1024*1024) >> 3) - 1);
 
     // R=1, W=1, X=1, A=0b100
-    uint64 cfg0 = 0xf;
+    //uint64 cfg0 = 0xf;
     // R=1, W=1, X=1, A=0b011
-    uint64 cfg1 = 0x1f;
+    //uint64 cfg1 = 0x1f;
     // R=0, W=0, X=0, A=0b011
-    uint64 cfg2 = 0x18;
+    //uint64 cfg2 = 0x18;
     // R=1, W=1, X=1, A=0b011
-    uint64 cfg3 = 0x1f;
+    //uint64 cfg3 = 0x1f;
 
-    w_pmpcfg0(cfg0+cfg1+cfg2+cfg3);
     w_pmpaddr0(addr0_val);
     w_pmpaddr1(addr1_val);
     w_pmpaddr2(addr2_val);
     w_pmpaddr3(addr3_val);
+    w_pmpcfg0(0x1f181f27); // concatnate bits cfg0-3
 
   #endif
 
