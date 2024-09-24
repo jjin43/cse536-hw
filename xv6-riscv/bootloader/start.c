@@ -20,7 +20,7 @@ char *bl_stack_end = bl_stack + sizeof(bl_stack);
 /* Context (SHA-256) for secure boot */
 SHA256_CTX sha256_ctx;
 #define SYSINFOADDR 0x80080000
-#define bootloader_start = 0x80000000
+#define bootloader_start 0x80000000
 
 /* Structure to collects system information */
 struct sys_info {
