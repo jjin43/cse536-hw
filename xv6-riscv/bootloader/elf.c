@@ -8,14 +8,16 @@
 
 #include <stdbool.h>
 
-#define RAMDISK 0x84000000
-
 struct elfhdr* kernel_elfhdr;
 struct proghdr* kernel_phdr;
 
 uint64 find_kernel_load_addr(enum kernel ktype) {
     // Point an ELF struct to RAMDISK to initialize it with the kernel binary’s ELF header
-    kernel_elfhdr = (struct elfhdr*)RAMDISK;
+    if(ktype == NORMAL) {
+        kernel_elfhdr = (struct elfhdr*)RAMDISK;
+    } else if(ktype == RECOVERY) {
+        kernel_elfhdr = (struct elfhdr*)RECOVERYDISK;
+    }
 
     // Retrieve the offset and size of the program headers
     uint64 phoff = kernel_elfhdr->phoff;
@@ -35,7 +37,11 @@ uint64 find_kernel_load_addr(enum kernel ktype) {
 
 uint64 find_kernel_size(enum kernel ktype) {
     // Point an ELF struct to RAMDISK to initialize it with the kernel binary’s ELF header
-    kernel_elfhdr = (struct elfhdr*)RAMDISK;
+    if(ktype == NORMAL) {
+        kernel_elfhdr = (struct elfhdr*)RAMDISK;
+    } else if(ktype == RECOVERY) {
+        kernel_elfhdr = (struct elfhdr*)RECOVERYDISK;
+    }
 
     // Retrieve the number of program headers
     uint64 phnum = kernel_elfhdr->phnum;
@@ -58,8 +64,12 @@ uint64 find_kernel_size(enum kernel ktype) {
 
 uint64 find_kernel_entry_addr(enum kernel ktype) {
     // Point an ELF struct to RAMDISK to initialize it with the kernel binary’s ELF header
-    kernel_elfhdr = (struct elfhdr*)RAMDISK;
-
+    if(ktype == NORMAL) {
+        kernel_elfhdr = (struct elfhdr*)RAMDISK;
+    } else if(ktype == RECOVERY) {
+        kernel_elfhdr = (struct elfhdr*)RECOVERYDISK;
+    }
+    
     // Retrieve the entry point address from the ELF header
     uint64 entry_addr = kernel_elfhdr->entry;
 

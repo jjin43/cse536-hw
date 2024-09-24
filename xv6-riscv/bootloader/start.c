@@ -117,10 +117,15 @@ void start()
   uint64 kernel_entry           = find_kernel_entry_addr(NORMAL);
   
   struct buf b;
-  for (uint64 offset = 0x1000; offset < kernel_binary_size; offset += BSIZE) {
-    b.blockno = offset / BSIZE;
+  uint64 num_blocks = kernel_binary_size / BSIZE;
+  if (kernel_binary_size % BSIZE != 0) {
+    num_blocks++;
+  }
+
+  for (uint64 i = 0; i < num_blocks; i++) {
+    b.blockno = i;
     kernel_copy(NORMAL, &b);
-    memmove((void*)(kernel_load_addr + offset), b.data, BSIZE);
+    memmove((void*)(kernel_load_addr + i * BSIZE), b.data, BSIZE);
   }
 
   /* CSE 536: Write the correct kernel entry point */
@@ -143,9 +148,9 @@ void start()
   w_mideleg(0xffff);
   w_sie(r_sie() | SIE_SEIE | SIE_STIE | SIE_SSIE);
 
-  // return address fix
-  uint64 addr = (uint64) panic;
-  asm volatile("mv ra, %0" : : "r" (addr));
+  // // return address fix
+  // uint64 addr = (uint64) panic;
+  // asm volatile("mv ra, %0" : : "r" (addr));
 
   // switch to supervisor mode and jump to main().
   asm volatile("mret");
