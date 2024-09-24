@@ -117,13 +117,13 @@ void start()
   /* CSE 536: With kernelpmp2, isolate 118-120 MB and 122-126 MB using NAPOT */ 
   #if defined(KERNELPMP2)
     // perm: 0-118, 118-120, 122-126
-    uint64 addr0_val = (bootloader_start + 122683392) >> 2 ;
+    uint64 addr0_val = (bootloader_start + 118*1024*1024) >> 2 ;
     uint64 addr1_val = ((bootloader_start + 120*1024*1024) >> 2 ) | 0b11;
     uint64 addr2_val = ((bootloader_start + 122*1024*1024) >> 2 ) | 0b111;
     uint64 addr3_val = ((bootloader_start + 126*1024*1024) >> 2 ) | 0b11;
 
     // R=1, W=1, X=1, A=0b100
-    uint64 cfg0 = 0x27;
+    uint64 cfg0 = 0xf;
     // R=1, W=1, X=1, A=0b011
     uint64 cfg1 = 0x1f;
     // R=0, W=0, X=0, A=0b011
