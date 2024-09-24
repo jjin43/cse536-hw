@@ -96,12 +96,8 @@ void start()
   /* CSE 536: With kernelpmp1, isolate upper 10MBs using TOR */ 
   #if defined(KERNELPMP1)
 
-    // set pmcfg register
-    uint64 cfg_val = 0;
-    cfg_val |= (1 << 0); // read perm bit
-    cfg_val |= (1 << 1); // write perm bit
-    cfg_val |= (1 << 2); // execute perm bit
-    cfg_val |= (0b100 << 3); // TOR bit = 0b100
+    // set pmcfg register, R=0b000[1], W=0b00[1]0, X=0b0[1]00, A=0b[10]00, 0b1111 = 0xf
+    uint64 cfg_val = 0xf
 
     // Write to pmpcfg0 register (config for PMP region0)
     w_pmpcfg0(cfg_val); 
@@ -122,26 +118,25 @@ void start()
     uint64 addr2_val = ((bootloader_start + 122*1024*1024) >> 2 ) + ((4*1024*1024) >> 3);
     uint64 addr3_val = ((bootloader_start + 126*1024*1024) >> 2 ) + ((2*1024*1024) >> 3) - 1;
 
-    // R=1, W=1, X=1, A=0b100
+    // R=1, W=1, X=1, A=0b10
     //uint64 cfg0 = 0xf;
-    // R=1, W=1, X=1, A=0b011
+    // R=1, W=1, X=1, A=0b11
     //uint64 cfg1 = 0x1f;
-    // R=0, W=0, X=0, A=0b011
+    // R=0, W=0, X=0, A=0b11
     //uint64 cfg2 = 0x18;
-    // R=1, W=1, X=1, A=0b011
+    // R=1, W=1, X=1, A=0b11
     //uint64 cfg3 = 0x1f;
 
     w_pmpaddr0(addr0_val);
     w_pmpaddr1(addr1_val);
     w_pmpaddr2(addr2_val);
     w_pmpaddr3(addr3_val);
-    w_pmpcfg0(0x1f181f0f); // concatnate bits cfg0-3
+    w_pmpcfg0(0x1f181f0f); // concatnate bits of cfg0-3
 
   #endif
 
   /* CSE 536: Verify if the kernel is untampered for secure boot */
-  //if (!is_secure_boot()) {
-  if(0==1){ 
+  if (!is_secure_boot()) {
     /* Skip loading since we should have booted into a recovery kernel 
      * in the function is_secure_boot() */
     goto out;
