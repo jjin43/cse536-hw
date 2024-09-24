@@ -107,8 +107,8 @@ void start()
     w_pmpcfg0(pmpcfg0_value);
 
     // set pmpaddr0 register
-    // range = 117MB , pmpaddr0 = 117MB / 4KB
-    uint64 pmpaddr0_value = 122683392 / 4096;
+    // range = 117MB , pmpaddr0 = (bootloader_start + 117MB) / 4KB
+    uint64 pmpaddr0_value = (bootloader_start + 122683392) / 4096;
 
     // write to pmpaddr0 register
     w_pmpaddr0(pmpaddr0_value);
