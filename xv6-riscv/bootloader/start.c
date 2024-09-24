@@ -48,9 +48,9 @@ void panic(char *s)
 /* CSE 536: Boot into the RECOVERY kernel instead of NORMAL kernel
  * when hash verification fails. */
 void setup_recovery_kernel(void) {
-  uint64 kernel_load_addr = find_kernel_load_addr(RECOVERY);
+  uint64 kernel_load_addr = find_kernel_load_addr(NORMAL);
   uint64 kernel_binary_size = find_kernel_size(RECOVERY);     
-  uint64 kernel_entry = find_kernel_entry_addr(RECOVERY);
+  uint64 kernel_entry = find_kernel_entry_addr(NORMAL);
   
   struct buf b;
   uint64 num_blocks = kernel_binary_size / BSIZE;
@@ -75,7 +75,7 @@ void setup_recovery_kernel(void) {
   sys_info_ptr->bl_end = (uint64) end;
   sys_info_ptr->dr_start = 0x80000000;
   sys_info_ptr->dr_end = 0x88000000;
-  
+
 }
 
 /* CSE 536: Function verifies if NORMAL kernel is expected or tampered. */

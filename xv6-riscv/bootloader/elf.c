@@ -25,9 +25,9 @@ uint64 find_kernel_load_addr(enum kernel ktype) {
     uint64 phentsize = kernel_elfhdr->phentsize;
 
     // calc addr of second program header section
-    uint64 second_phdr_addr = kaddr + phoff + phentsize;
+    uint64 phdr_addr_2 = kaddr + phoff + phentsize;
 
-    kernel_phdr = (struct proghdr*)second_phdr_addr;
+    kernel_phdr = (struct proghdr*)phdr_addr_2;
     uint64 kernel_text_addr = kernel_phdr->vaddr;
 
     return kernel_text_addr;
