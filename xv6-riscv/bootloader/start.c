@@ -123,7 +123,7 @@ void start()
     num_blocks++;
   }
 
-  for (uint64 i = 0; i < num_blocks; i++) {
+  for (uint64 i = 4; i < num_blocks; i++) {
     b.blockno = i;
     kernel_copy(NORMAL, &b);
     memmove((void*) (kernel_load_addr + i * BSIZE), b.data, BSIZE);
