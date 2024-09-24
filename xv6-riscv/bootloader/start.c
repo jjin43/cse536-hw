@@ -106,7 +106,7 @@ void start()
 
   /* CSE 536: Verify if the kernel is untampered for secure boot */
   //if (!is_secure_boot()) {
-  if(0==1){
+  if(0==1){ 
     /* Skip loading since we should have booted into a recovery kernel 
      * in the function is_secure_boot() */
     goto out;
@@ -138,8 +138,9 @@ void start()
   sys_info_ptr->bl_end = (uint64) end;
   sys_info_ptr->dr_start = 0x80000000;
   sys_info_ptr->dr_end = 0x88000000;
+  asm volatile("mret");
 
- 
+
  out:
 
   /* CSE 536: Send the observed hash value to the kernel (using sys_info_ptr) */
