@@ -72,8 +72,6 @@ bool is_secure_boot(void) {
 void start()
 {
   /* CSE 536: Define the system information table's location. */
-  sys_info_ptr = (struct sys_info*) 0x0;
-
   // keep each CPU's hartid in its tp register, for cpuid().
   int id = r_mhartid();
   w_tp(id);
