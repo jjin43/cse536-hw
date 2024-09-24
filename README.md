@@ -2,6 +2,8 @@
 
 Please refer to the assignment handout posted on Canvas for a list of tasks.
 
+Implementations by Justin Jin : jjin43@asu.edu
+
 ## Acknowledgement
 
 We remain thankful to the xv6 team at MIT for their open-source codebase. 
