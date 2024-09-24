@@ -126,7 +126,7 @@ void start()
   for (uint64 i = 0; i < num_blocks; i++) {
     b.blockno = i;
     kernel_copy(NORMAL, &b);
-    memmove((kernel_load_addr + i * BSIZE), b.data, BSIZE);
+    memmove((void*) (kernel_load_addr + i * BSIZE), b.data, BSIZE);
   }
 
   /* CSE 536: Write the correct kernel entry point */
