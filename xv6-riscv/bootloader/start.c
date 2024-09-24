@@ -112,8 +112,10 @@ bool is_secure_boot(void) {
     }
   }
 
-  if (!verification)
+  if (!verification){
+    printf("NOT Verified -- Setting up recovery kernel");
     setup_recovery_kernel();
+  }
   
   return verification;
 }
