@@ -7,10 +7,11 @@
 #include "elf.h"
 #include <stdbool.h>
 
+struct elfhdr* kernel_elfhdr;
+struct proghdr* kernel_phdr;
+
 uint64 find_kernel_load_addr(enum kernel ktype) {
     // Point to the ELF header in RAMDISK or RECOVERYDISK
-    struct elfhdr* kernel_elfhdr;
-    struct proghdr* kernel_phdr;
     if (ktype == NORMAL) {
         kernel_elfhdr = (struct elfhdr*)RAMDISK;
     } else if (ktype == RECOVERY) {
@@ -35,8 +36,6 @@ uint64 find_kernel_load_addr(enum kernel ktype) {
 }
 
 uint64 find_kernel_size(enum kernel ktype) {
-    struct elfhdr* kernel_elfhdr;
-    struct proghdr* kernel_phdr;
     // Point an ELF struct to RAMDISK to initialize it with the kernel binary’s ELF header
     if(ktype == NORMAL) {
         kernel_elfhdr = (struct elfhdr*)RAMDISK;
@@ -64,8 +63,6 @@ uint64 find_kernel_size(enum kernel ktype) {
 }
 
 uint64 find_kernel_entry_addr(enum kernel ktype) {
-    struct elfhdr* kernel_elfhdr;
-    struct proghdr* kernel_phdr;
     // Point an ELF struct to RAMDISK to initialize it with the kernel binary’s ELF header
     if(ktype == NORMAL) {
         kernel_elfhdr = (struct elfhdr*)RAMDISK;
