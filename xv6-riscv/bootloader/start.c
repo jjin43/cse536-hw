@@ -134,7 +134,7 @@ void start()
   sys_info_ptr->dr_end = 0x88000000;
 
  
- out:
+ //out:
 
   /* CSE 536: Send the observed hash value to the kernel (using sys_info_ptr) */
 
