@@ -20,6 +20,7 @@ char *bl_stack_end = bl_stack + sizeof(bl_stack);
 /* Context (SHA-256) for secure boot */
 SHA256_CTX sha256_ctx;
 #define SYSINFOADDR 0x80080000
+#define bootloader_start = 0x80000000
 
 /* Structure to collects system information */
 struct sys_info {
@@ -113,9 +114,9 @@ void start()
   }
   
   /* CSE 536: Load the NORMAL kernel binary (assuming secure boot passed). */
-  uint64 kernel_load_addr       = find_kernel_load_addr(NORMAL);
-  uint64 kernel_binary_size     = find_kernel_size(NORMAL);     
-  uint64 kernel_entry           = find_kernel_entry_addr(NORMAL);
+  uint64 kernel_load_addr = find_kernel_load_addr(NORMAL);
+  uint64 kernel_binary_size = find_kernel_size(NORMAL);     
+  uint64 kernel_entry = find_kernel_entry_addr(NORMAL);
   
   struct buf b;
   uint64 num_blocks = kernel_binary_size / BSIZE;
@@ -123,6 +124,7 @@ void start()
     num_blocks++;
   }
 
+  // skip ELF header, first 4kb
   for (uint64 i = 4; i < num_blocks; i++) {
     b.blockno = i;
     kernel_copy(NORMAL, &b);
@@ -135,7 +137,7 @@ void start()
 
   /* CSE 536: Provide system information to the kernel. */
   sys_info_ptr = (struct sys_info*) SYSINFOADDR;
-  sys_info_ptr->bl_start = (uint64) start;
+  sys_info_ptr->bl_start = bootloader_start;
   sys_info_ptr->bl_end = (uint64) end;
   sys_info_ptr->dr_start = 0x80000000;
   sys_info_ptr->dr_end = 0x88000000;
