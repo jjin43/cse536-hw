@@ -12,17 +12,20 @@ struct proghdr* kernel_phdr;
 
 uint64 find_kernel_load_addr(enum kernel ktype) {
     // point elf struct
+    uint64 kaddr = 0;
     if(ktype == NORMAL) {
         kernel_elfhdr = (struct elfhdr*)RAMDISK;
+        kaddr = RAMDISK;
     } else if(ktype == RECOVERY) {
         kernel_elfhdr = (struct elfhdr*)RECOVERYDISK;
+        kaddr = RECOVERYDISK;
     }
 
     uint64 phoff = kernel_elfhdr->phoff;
     uint64 phentsize = kernel_elfhdr->phentsize;
 
     // calc addr of second program header section
-    uint64 second_phdr_addr = RAMDISK + phoff + phentsize;
+    uint64 second_phdr_addr = kaddr + phoff + phentsize;
 
     kernel_phdr = (struct proghdr*)second_phdr_addr;
     uint64 kernel_text_addr = kernel_phdr->vaddr;
@@ -31,10 +34,13 @@ uint64 find_kernel_load_addr(enum kernel ktype) {
 }
 
 uint64 find_kernel_size(enum kernel ktype) {
+    uint64 kaddr = 0;
     if(ktype == NORMAL) {
         kernel_elfhdr = (struct elfhdr*)RAMDISK;
+        kaddr = RAMDISK;
     } else if(ktype == RECOVERY) {
         kernel_elfhdr = (struct elfhdr*)RECOVERYDISK;
+        kaddr = RECOVERYDISK;
     }
 
     // get num of program headers
@@ -46,7 +52,7 @@ uint64 find_kernel_size(enum kernel ktype) {
 
     // find the maximum of the p_offset + p_filesz values
     for (uint64 i = 0; i < phnum; i++) {
-        kernel_phdr = (struct proghdr*)(RAMDISK + phoff + i * phentsize);
+        kernel_phdr = (struct proghdr*)(kaddr + phoff + i * phentsize);
         uint64 size = kernel_phdr->off + kernel_phdr->filesz;
         if (size > max_size) {
             max_size = size;

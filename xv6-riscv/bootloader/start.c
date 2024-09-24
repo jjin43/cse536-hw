@@ -75,6 +75,7 @@ void setup_recovery_kernel(void) {
   sys_info_ptr->bl_end = (uint64) end;
   sys_info_ptr->dr_start = 0x80000000;
   sys_info_ptr->dr_end = 0x88000000;
+  
 }
 
 /* CSE 536: Function verifies if NORMAL kernel is expected or tampered. */
