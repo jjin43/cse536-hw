@@ -118,9 +118,9 @@ void start()
   #if defined(KERNELPMP2)
     // perm: 0-118, 118-120, 122-126
     uint64 addr0_val = (bootloader_start + 118*1024*1024) >> 2 ;
-    uint64 addr1_val = ((bootloader_start + 120*1024*1024) >> 2 ) + (((2*1024*1024) >> 3) - 1);
+    uint64 addr1_val = ((bootloader_start + 120*1024*1024) >> 2 ) + ((2*1024*1024) >> 3) - 1;
     uint64 addr2_val = ((bootloader_start + 122*1024*1024) >> 2 ) + ((4*1024*1024) >> 3);
-    uint64 addr3_val = ((bootloader_start + 126*1024*1024) >> 2 ) + (((2*1024*1024) >> 3) - 1);
+    uint64 addr3_val = ((bootloader_start + 126*1024*1024) >> 2 ) + ((2*1024*1024) >> 3) - 1;
 
     // R=1, W=1, X=1, A=0b100
     //uint64 cfg0 = 0xf;
@@ -135,7 +135,7 @@ void start()
     w_pmpaddr1(addr1_val);
     w_pmpaddr2(addr2_val);
     w_pmpaddr3(addr3_val);
-    w_pmpcfg0(0x1f181f27); // concatnate bits cfg0-3
+    w_pmpcfg0(0x1f181f0f); // concatnate bits cfg0-3
 
   #endif
 
