@@ -97,25 +97,46 @@ void start()
   #if defined(KERNELPMP1)
 
     // set pmcfg register
-    uint64 pmpcfg0_value = 0;
-    pmpcfg0_value |= (1 << 0); // read perm bit
-    pmpcfg0_value |= (1 << 1); // write perm bit
-    pmpcfg0_value |= (1 << 2); // execute perm bit
-    pmpcfg0_value |= (0b100 << 3); // TOR bit = 0b100
+    uint64 cfg_val = 0;
+    cfg_val |= (1 << 0); // read perm bit
+    cfg_val |= (1 << 1); // write perm bit
+    cfg_val |= (1 << 2); // execute perm bit
+    cfg_val |= (0b100 << 3); // TOR bit = 0b100
 
-    w_pmpcfg0(pmpcfg0_value); 
+    // Write to pmpcfg0 register (config for PMP region0)
+    w_pmpcfg0(cfg_val); 
 
-    // set pmpaddr0 register, only 34 bit
-    // range = 117MB , pmpaddr0 = (bootloader_start + 117MB) / 4KB
-    uint64 pmpaddr0_value = (bootloader_start + 117*1024*1024) / 4;
+    // set pmpaddr0 register
+    // range = 117MB = 122683392B, 4KB alligned
+    uint64 addr_val = (bootloader_start + 122683392) >> 2 ;
 
-    w_pmpaddr0(pmpaddr0_value);
+    // write to pmpaddr0 register
+    w_pmpaddr0(addr_val);
   #endif
 
   /* CSE 536: With kernelpmp2, isolate 118-120 MB and 122-126 MB using NAPOT */ 
   #if defined(KERNELPMP2)
-    w_pmpaddr0(0x0ull);
-    w_pmpcfg0(0x0);
+    // perm: 0-118, 118-120, 122-126
+    uint64 addr0_val = (bootloader_start + 122683392) >> 2 ;
+    uint64 addr1_val = ((bootloader_start + 120*1024*1024) >> 2 ) | 0b11;
+    uint64 addr2_val = ((bootloader_start + 122*1024*1024) >> 2 ) | 0b111;
+    uint64 addr3_val = ((bootloader_start + 126*1024*1024) >> 2 ) | 0b11;
+
+    // R=1, W=1, X=1, A=0b100
+    uint64 cfg0 = 0x27;
+    // R=1, W=1, X=1, A=0b011
+    uint64 cfg1 = 0x1f;
+    // R=0, W=0, X=0, A=0b011
+    uint64 cfg2 = 0x18;
+    // R=1, W=1, X=1, A=0b011
+    uint64 cfg3 = 0x1f;
+
+    w_pmpcfg0(cfg0+cfg1+cfg2+cfg3);
+    w_pmpaddr0(addr0_val);
+    w_pmpaddr1(addr1_val);
+    w_pmpaddr2(addr2_val);
+    w_pmpaddr3(addr3_val);
+
   #endif
 
   /* CSE 536: Verify if the kernel is untampered for secure boot */
