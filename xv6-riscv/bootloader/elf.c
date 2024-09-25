@@ -50,19 +50,16 @@ uint64 find_kernel_size(enum kernel ktype) {
     uint64 phoff = kernel_elfhdr->phoff;
     uint64 phentsize = kernel_elfhdr->phentsize;
 
-    uint64 max_size = 0;
+    uint64 total = 0;
 
     // Iterate through each program header to find the end of the last segment
     for (uint64 i = 0; i < phnum; i++) {
         struct proghdr *prog_hdr = (struct proghdr *)(kaddr + phoff + i * phentsize);
-        uint64 segment_end = prog_hdr->off + prog_hdr->filesz;
-        if (segment_end > max_size) {
-            max_size = segment_end;
-        }
+        total += prog_hdr->filesz;
     }
 
     // Return the size based on program headers only
-    return max_size;
+    return total;
 }
 
 
