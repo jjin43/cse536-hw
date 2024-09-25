@@ -70,7 +70,6 @@ void setup_recovery_kernel(void) {
   w_mepc((uint64) kernel_entry);
 
   /* CSE 536: Provide system information to the kernel. */
-  sys_info_ptr = (struct sys_info*) SYSINFOADDR;
   sys_info_ptr->bl_start = bootloader_start;
   sys_info_ptr->bl_end = (uint64) end;
   sys_info_ptr->dr_start = 0x80000000;
@@ -186,6 +185,8 @@ void start()
 
   #endif
 
+  sys_info_ptr = (struct sys_info*) SYSINFOADDR;
+
   /* CSE 536: Verify if the kernel is untampered for secure boot */
   if (!is_secure_boot()) {
     /* Skip loading since we should have booted into a recovery kernel 
@@ -216,7 +217,6 @@ void start()
   w_mepc((uint64) kernel_entry);
 
   /* CSE 536: Provide system information to the kernel. */
-  sys_info_ptr = (struct sys_info*) SYSINFOADDR;
   sys_info_ptr->bl_start = bootloader_start;
   sys_info_ptr->bl_end = (uint64) end;
   sys_info_ptr->dr_start = 0x80000000;

@@ -24,7 +24,7 @@ elif [ "$1" == "kernelpmp1tamper" ]; then
 elif [ "$1" == "kernelpmp2tamper" ]; then
     upper=`echo kernelpmp2 | tr '[:lower:]' '[:upper:]'`
 else
-    upper=`echo $1 | tr '[:lower:]' '[:upper:]'`
+    upper=`echo $kernel | tr '[:lower:]' '[:upper:]'`
 fi
 
 make clean
