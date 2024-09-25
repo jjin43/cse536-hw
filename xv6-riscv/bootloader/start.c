@@ -81,43 +81,57 @@ void setup_recovery_kernel(void) {
 bool is_secure_boot(void) {
   bool verification = true;
 
-  /* Read the binary and update the observed measurement 
-   * (simplified template provided below) */
+  /* Initialize the SHA-256 context */
   sha256_init(&sha256_ctx);
+  
   struct buf b;
-  uint64 kernel_binary_size = find_kernel_size(NORMAL);     
+  uint64 kernel_binary_size = find_kernel_size(NORMAL);
   
+  // Calculate the number of full blocks (each of size BSIZE)
   uint64 num_blocks = kernel_binary_size / BSIZE;
-  if (kernel_binary_size % BSIZE != 0) {
-    num_blocks++;
+  uint64 last_block_size = kernel_binary_size % BSIZE;
+
+  // If there is a remainder, we need to hash a partial last block
+  if (last_block_size != 0) {
+    num_blocks++;  // Add one more block for the last partial block
+  } else {
+    last_block_size = BSIZE;  // If perfectly divisible, the last block is BSIZE
   }
 
+  // Loop through the full blocks
   for (uint64 i = 0; i < num_blocks; i++) {
-    b.blockno = i;  
+    b.blockno = i;
     kernel_copy(NORMAL, &b);
-    sha256_update(&sha256_ctx, (const unsigned char*) b.data, BSIZE);
-  }
-  
-  sha256_final(&sha256_ctx, sys_info_ptr->observed_kernel_measurement);
 
-
-  /* Three more tasks required below: 
-   *  1. Compare observed measurement with expected hash
-   *  2. Setup the recovery kernel if comparison fails
-   *  3. Copy expected kernel hash to the system information table */
-  for (int i = 0; i < 32; i++) {
-    sys_info_ptr->expected_kernel_measurement[i] = trusted_kernel_hash[i];
-    if (sys_info_ptr->observed_kernel_measurement[i] != trusted_kernel_hash[i]) {
-      verification = false; 
+    // Check if it's the last block
+    if (i == num_blocks - 1) {
+      // For the last block, only hash the actual size (could be less than BSIZE)
+      sha256_update(&sha256_ctx, (const unsigned char*) b.data, last_block_size);
+    } else {
+      // For all other blocks, hash the full BSIZE
+      sha256_update(&sha256_ctx, (const unsigned char*) b.data, BSIZE);
     }
   }
 
-  if (!verification){
+  // Finalize the SHA-256 hash
+  sha256_final(&sha256_ctx, sys_info_ptr->observed_kernel_measurement);
+
+  /* Compare the observed measurement with the expected hash */
+  for (int i = 0; i < 32; i++) {
+    sys_info_ptr->expected_kernel_measurement[i] = trusted_kernel_hash[i];
+    if (sys_info_ptr->observed_kernel_measurement[i] != trusted_kernel_hash[i]) {
+      verification = false;
+    }
+  }
+
+  /* If verification fails, set up the recovery kernel */
+  if (!verification) {
     setup_recovery_kernel();
   }
   
   return verification;
 }
+
 
 // entry.S jumps here in machine mode on stack0.
 void start()
