@@ -51,7 +51,7 @@ uint64 find_kernel_size(enum kernel ktype) {
     uint64 max_size = 0;
 
     // find the maximum of the p_offset + p_filesz values
-    for (uint64 i = 0; i < phnum; i++) {
+    for (uint64 i = 1; i < phnum; i++) {
         kernel_phdr = (struct proghdr*)(kaddr + phoff + i * phentsize);
         uint64 size = kernel_phdr->off + kernel_phdr->filesz;
         max_size += size;
