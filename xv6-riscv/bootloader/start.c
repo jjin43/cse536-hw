@@ -86,17 +86,11 @@ bool is_secure_boot(void) {
   sha256_init(&sha256_ctx);
   struct buf b;
   uint64 kernel_binary_size = find_kernel_size(NORMAL);     
-  
-  uint64 num_blocks = kernel_binary_size / BSIZE;
-  if (kernel_binary_size % BSIZE != 0) {
-    num_blocks++;
-  }
 
-  // skip ELF header, first 4kb
-  for (uint64 i = 4; i < num_blocks; i++) {
-    b.blockno = i;
-    kernel_copy(NORMAL, &b);
-    sha256_update(&sha256_ctx, (const unsigned char*) b.data, BSIZE);
+  for (uint64 offset = 0; offset < kernel_binary_size; offset += BSIZE) {
+      b.blockno = offset / BSIZE;
+      kernel_copy(NORMAL, &b);  // Copy each block from RAMDISK
+      sha256_update(&sha256_ctx, (const unsigned char*) b.data, BSIZE);
   }
   
   sha256_final(&sha256_ctx, sys_info_ptr->observed_kernel_measurement);
