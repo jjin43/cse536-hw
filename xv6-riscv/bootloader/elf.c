@@ -33,32 +33,38 @@ uint64 find_kernel_load_addr(enum kernel ktype) {
     return kernel_text_addr;
 }
 
+
 uint64 find_kernel_size(enum kernel ktype) {
     uint64 kaddr = 0;
-    if(ktype == NORMAL) {
+    if (ktype == NORMAL) {
         kernel_elfhdr = (struct elfhdr*)RAMDISK;
         kaddr = RAMDISK;
-    } else if(ktype == RECOVERY) {
+    } else if (ktype == RECOVERY) {
         kernel_elfhdr = (struct elfhdr*)RECOVERYDISK;
         kaddr = RECOVERYDISK;
     }
 
-    // get num of program headers
+    // Step 1: Program Headers
+    // Get the number of program headers
     uint64 phnum = kernel_elfhdr->phnum;
     uint64 phoff = kernel_elfhdr->phoff;
     uint64 phentsize = kernel_elfhdr->phentsize;
 
     uint64 max_size = 0;
 
-    // find the maximum of the p_offset + p_filesz values
-    for (uint64 i = 1; i < phnum; i++) {
-        kernel_phdr = (struct proghdr*)(kaddr + phoff + i * phentsize);
-        uint64 size = kernel_phdr->off + kernel_phdr->filesz;
-        max_size += size;
+    // Iterate through each program header to find the end of the last segment
+    for (uint64 i = 0; i < phnum; i++) {
+        struct proghdr *prog_hdr = (struct proghdr *)(kaddr + phoff + i * phentsize);
+        uint64 segment_end = prog_hdr->off + prog_hdr->filesz;
+        if (segment_end > max_size) {
+            max_size = segment_end;
+        }
     }
 
+    // Return the size based on program headers only
     return max_size;
 }
+
 
 uint64 find_kernel_entry_addr(enum kernel ktype) {
     if(ktype == NORMAL) {
