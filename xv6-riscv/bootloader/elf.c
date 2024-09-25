@@ -36,10 +36,10 @@ uint64 find_kernel_load_addr(enum kernel ktype) {
 
 uint64 find_kernel_size(enum kernel ktype) {
     uint64 kaddr = 0;
-    if (ktype == NORMAL) {
+    if(ktype == NORMAL) {
         kernel_elfhdr = (struct elfhdr*)RAMDISK;
         kaddr = RAMDISK;
-    } else if (ktype == RECOVERY) {
+    } else if(ktype == RECOVERY) {
         kernel_elfhdr = (struct elfhdr*)RECOVERYDISK;
         kaddr = RECOVERYDISK;
     }
@@ -50,17 +50,35 @@ uint64 find_kernel_size(enum kernel ktype) {
     uint64 phoff = kernel_elfhdr->phoff;
     uint64 phentsize = kernel_elfhdr->phentsize;
 
-    uint64 total = 0;
+    uint64 max_size = 0;
 
     // Iterate through each program header to find the end of the last segment
     for (uint64 i = 0; i < phnum; i++) {
         struct proghdr *prog_hdr = (struct proghdr *)(kaddr + phoff + i * phentsize);
-        total += prog_hdr->filesz;
+        uint64 segment_end = prog_hdr->off + prog_hdr->filesz;
+        if (segment_end > max_size) {
+            max_size = segment_end;
+        }
     }
 
-    // Return the size based on program headers only
-    return total;
+    // Step 2: Section Headers
+    // Get the section header offset, number, and entry size
+    uint64 shoff = kernel_elfhdr->shoff;
+    uint64 shnum = kernel_elfhdr->shnum;
+    uint64 shentsize = kernel_elfhdr->shentsize;
+
+    // Calculate the total size of the section headers
+    uint64 section_end = shoff + (shnum * shentsize);
+    
+    // Update max_size if the section headers extend beyond the last segment
+    if (section_end > max_size) {
+        max_size = section_end;
+    }
+
+    // Return the total size based on both program headers and section headers
+    return max_size;
 }
+
 
 
 uint64 find_kernel_entry_addr(enum kernel ktype) {
