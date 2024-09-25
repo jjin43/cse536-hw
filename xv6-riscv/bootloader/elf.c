@@ -62,7 +62,6 @@ uint64 find_kernel_load_addr(enum kernel ktype) {
 //     return max_size;
 // }
 
-// Helper function for Hash
 uint64 find_kernel_size(enum kernel ktype) {
     uint64 kaddr = 0;
     if (ktype == NORMAL) {
@@ -73,14 +72,12 @@ uint64 find_kernel_size(enum kernel ktype) {
         kaddr = RECOVERYDISK;
     }
 
-    // Get the number of program headers and their offset
     uint64 phnum = kernel_elfhdr->phnum;
     uint64 phoff = kernel_elfhdr->phoff;
     uint64 phentsize = kernel_elfhdr->phentsize;
 
     uint64 max_size = 0;
 
-    // Find the maximum of the p_offset + p_filesz values
     for (uint64 i = 0; i < phnum; i++) {
         kernel_phdr = (struct proghdr*)(kaddr + phoff + i * phentsize);
         uint64 size = kernel_phdr->off + kernel_phdr->filesz;
@@ -89,12 +86,10 @@ uint64 find_kernel_size(enum kernel ktype) {
         }
     }
 
-    // Now, get the section header offset and number of section headers
     uint64 shoff = kernel_elfhdr->shoff;
     uint64 shentsize = kernel_elfhdr->shentsize;
     uint64 shnum = kernel_elfhdr->shnum;
 
-    // Calculate the end of the section headers
     uint64 section_end = shoff + (shnum * shentsize);
     if (section_end > max_size) {
         max_size = section_end;
