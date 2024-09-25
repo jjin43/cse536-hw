@@ -85,7 +85,7 @@ bool is_secure_boot(void) {
    * (simplified template provided below) */
   sha256_init(&sha256_ctx);
   struct buf b;
-  uint64 kernel_binary_size = find_kernel_size(NORMAL);     
+  uint64 kernel_binary_size = find_kernel_full_size(NORMAL);     
   
   uint64 num_blocks = kernel_binary_size / BSIZE;
   if (kernel_binary_size % BSIZE != 0) {
@@ -93,7 +93,7 @@ bool is_secure_boot(void) {
   }
 
   for (uint64 i = 0; i < num_blocks; i++) {
-    b.blockno = i;
+    b.blockno = i;  
     kernel_copy(NORMAL, &b);
     sha256_update(&sha256_ctx, (const unsigned char*) b.data, BSIZE);
   }
