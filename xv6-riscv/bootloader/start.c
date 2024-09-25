@@ -87,36 +87,30 @@ bool is_secure_boot(void) {
   struct buf b;
   uint64 kernel_binary_size = find_kernel_size(NORMAL);
   
-  // Calculate the number of full blocks (each of size BSIZE)
   uint64 num_blocks = kernel_binary_size / BSIZE;
   uint64 last_block_size = kernel_binary_size % BSIZE;
 
-  // If there is a remainder, we need to hash a partial last block
   if (last_block_size != 0) {
-    num_blocks++;  // Add one more block for the last partial block
+    num_blocks++;
   } else {
-    last_block_size = BSIZE;  // If perfectly divisible, the last block is BSIZE
+    last_block_size = BSIZE;
   }
 
-  // Loop through the full blocks
   for (uint64 i = 0; i < num_blocks; i++) {
     b.blockno = i;
     kernel_copy(NORMAL, &b);
 
-    // Check if it's the last block
     if (i == num_blocks - 1) {
-      // For the last block, only hash the actual size (could be less than BSIZE)
+      // for last block, only hash actual size, leq. BSIZE
       sha256_update(&sha256_ctx, (const unsigned char*) b.data, last_block_size);
     } else {
-      // For all other blocks, hash the full BSIZE
       sha256_update(&sha256_ctx, (const unsigned char*) b.data, BSIZE);
     }
   }
 
-  // Finalize the SHA-256 hash
   sha256_final(&sha256_ctx, sys_info_ptr->observed_kernel_measurement);
 
-  /* Compare the observed measurement with the expected hash */
+  // check hash
   for (int i = 0; i < 32; i++) {
     sys_info_ptr->expected_kernel_measurement[i] = trusted_kernel_hash[i];
     if (sys_info_ptr->observed_kernel_measurement[i] != trusted_kernel_hash[i]) {

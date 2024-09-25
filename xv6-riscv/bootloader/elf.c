@@ -44,15 +44,13 @@ uint64 find_kernel_size(enum kernel ktype) {
         kaddr = RECOVERYDISK;
     }
 
-    // Step 1: Program Headers
-    // Get the number of program headers
+    // program headers
     uint64 phnum = kernel_elfhdr->phnum;
     uint64 phoff = kernel_elfhdr->phoff;
     uint64 phentsize = kernel_elfhdr->phentsize;
 
     uint64 max_size = 0;
 
-    // Iterate through each program header to find the end of the last segment
     for (uint64 i = 0; i < phnum; i++) {
         struct proghdr *prog_hdr = (struct proghdr *)(kaddr + phoff + i * phentsize);
         uint64 segment_end = prog_hdr->off + prog_hdr->filesz;
@@ -61,21 +59,18 @@ uint64 find_kernel_size(enum kernel ktype) {
         }
     }
 
-    // Step 2: Section Headers
-    // Get the section header offset, number, and entry size
+    // section headers
     uint64 shoff = kernel_elfhdr->shoff;
     uint64 shnum = kernel_elfhdr->shnum;
     uint64 shentsize = kernel_elfhdr->shentsize;
 
-    // Calculate the total size of the section headers
     uint64 section_end = shoff + (shnum * shentsize);
     
-    // Update max_size if the section headers extend beyond the last segment
+    // highest end addr = size
     if (section_end > max_size) {
         max_size = section_end;
     }
 
-    // Return the total size based on both program headers and section headers
     return max_size;
 }
 

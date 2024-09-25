@@ -1,16 +1,14 @@
 OUTPUT_ARCH("riscv")
 
-/* Define the starting address of the bootloader binary */
 bootloader_start = 0x0000000080000000;
 
-/* Define the entry point */
+/* Task: ensure the correct starting function. */
 ENTRY(_entry)
 
 SECTIONS
 {
   . = bootloader_start;
 
-  /* Text section */
   .text :
   {
     *(.text)
@@ -18,7 +16,6 @@ SECTIONS
     ecode = .;
   }
 
-  /* Data section */
   .data :
   {
     *(.data)
@@ -26,7 +23,6 @@ SECTIONS
     edata = .;
   }
 
-  /* RO data section */
   .rodata :
   {
     *(.rodata)
@@ -34,7 +30,6 @@ SECTIONS
     erodata = .;
   }
 
-  /* BSS section */
   .bss :
   {
     *(.bss)
@@ -42,6 +37,5 @@ SECTIONS
     ebss = .;
   }
 
-  /* End of Entire Program */
   end = .;
 }
