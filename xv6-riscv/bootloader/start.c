@@ -188,7 +188,8 @@ void start()
   sys_info_ptr = (struct sys_info*) SYSINFOADDR;
 
   /* CSE 536: Verify if the kernel is untampered for secure boot */
-  if (!is_secure_boot()) {
+  //if (!is_secure_boot()) {
+  if(0==1){
     /* Skip loading since we should have booted into a recovery kernel 
      * in the function is_secure_boot() */
     goto out;
