@@ -8,6 +8,7 @@
 #include "buf.h"
 #include "measurements.h"
 #include <stdbool.h>
+#include <string.h>
 
 void main();
 void timerinit();
@@ -100,7 +101,7 @@ bool is_secure_boot(void) {
   }
   
   sha256_final(&sha256_ctx, sys_info_ptr->observed_kernel_measurement);
-  sys_info_ptr->expected_kernel_measurement = trusted_kernel_hash;
+  memcpy(sys_info_ptr->expected_kernel_measurement, trusted_kernel_hash, sizeof(trusted_kernel_hash));
 
   /* Three more tasks required below: 
    *  1. Compare observed measurement with expected hash
