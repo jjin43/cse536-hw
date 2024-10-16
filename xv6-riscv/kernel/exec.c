@@ -65,7 +65,7 @@ exec(char *path, char **argv)
     goto bad;
 
   // Determine if the process should be on-demand
-  if (custom_strcmp(path, "/init") != 0 && custom_strcmp(path, "/sh") != 0) {
+  if (custom_strcmp(path, "/init") == 0 && custom_strcmp(path, "/sh") == 0) {
     p->ondemand = false;
   } else {
     p->ondemand = true;
