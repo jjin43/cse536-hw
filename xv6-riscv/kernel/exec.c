@@ -10,6 +10,15 @@
 // static 
 int loadseg(pde_t *, uint64, struct inode *, uint, uint);
 
+// Custom strcmp implementation
+int custom_strcmp(const char *s1, const char *s2) {
+  while (*s1 && (*s1 == *s2)) {
+    s1++;
+    s2++;
+  }
+  return *(unsigned char *)s1 - *(unsigned char *)s2;
+}
+
 int flags2perm(int flags)
 {
     int perm = 0;
@@ -39,7 +48,7 @@ exec(char *path, char **argv)
 
   begin_op();
 
-if((ip = namei(path)) == 0){
+  if((ip = namei(path)) == 0){
     end_op();
     return -1;
   }
@@ -56,7 +65,7 @@ if((ip = namei(path)) == 0){
     goto bad;
 
   // Determine if the process should be on-demand
-  if (strcmp(path, "/init") != 0 && strcmp(path, "/sh") != 0) {
+  if (custom_strcmp(path, "/init") != 0 && custom_strcmp(path, "/sh") != 0) {
     p->ondemand = true;
     print_ondemand_proc(path); // Print on-demand process info
   } else {
