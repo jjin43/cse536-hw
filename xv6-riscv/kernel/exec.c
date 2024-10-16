@@ -39,7 +39,7 @@ exec(char *path, char **argv)
 
   begin_op();
 
-  if((ip = namei(path)) == 0){
+if((ip = namei(path)) == 0){
     end_op();
     return -1;
   }
@@ -55,6 +55,14 @@ exec(char *path, char **argv)
   if((pagetable = proc_pagetable(p)) == 0)
     goto bad;
 
+  // Determine if the process should be on-demand
+  if (strcmp(path, "/init") != 0 && strcmp(path, "/sh") != 0) {
+    p->ondemand = true;
+    print_ondemand_proc(path); // Print on-demand process info
+  } else {
+    p->ondemand = false;
+  }
+
   // Load program into memory.
   for(i=0, off=elf.phoff; i<elf.phnum; i++, off+=sizeof(ph)){
     if(readi(ip, 0, (uint64)&ph, off, sizeof(ph)) != sizeof(ph))
@@ -68,12 +76,17 @@ exec(char *path, char **argv)
     if(ph.vaddr % PGSIZE != 0)
       goto bad;
 
-    uint64 sz1;
-    if((sz1 = uvmalloc(pagetable, sz, ph.vaddr + ph.memsz, flags2perm(ph.flags))) == 0)
-      goto bad;
-    sz = sz1;
-    if(loadseg(pagetable, ph.vaddr, ip, ph.off, ph.filesz) < 0)
-      goto bad;
+    if (!p->ondemand) {
+      uint64 sz1;
+      if((sz1 = uvmalloc(pagetable, sz, ph.vaddr + ph.memsz, flags2perm(ph.flags))) == 0)
+        goto bad;
+      sz = sz1;
+      if(loadseg(pagetable, ph.vaddr, ip, ph.off, ph.filesz) < 0)
+        goto bad;
+    } else {
+      // Print skipped section info
+      print_skip_section(p->name, ph.vaddr, ph.memsz);
+    }
   }
   iunlockput(ip);
   end_op();
