@@ -42,9 +42,9 @@ exec(char *path, char **argv)
   struct proc *p = myproc();
 
   /* CSE 536: (2.1) Check on-demand status. */
-  if (p->ondemand == true) {
-    print_ondemand_proc(path);
-  }
+  // if (p->ondemand == true) {
+  //   print_ondemand_proc(path);
+  // }
 
   begin_op();
 
@@ -66,10 +66,11 @@ exec(char *path, char **argv)
 
   // Determine if the process should be on-demand
   if (custom_strcmp(path, "/init") != 0 && custom_strcmp(path, "/sh") != 0) {
+    p->ondemand = false;
+  } else {
     p->ondemand = true;
     print_ondemand_proc(path); // Print on-demand process info
-  } else {
-    p->ondemand = false;
+
   }
 
   // Load program into memory.
