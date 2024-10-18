@@ -69,50 +69,86 @@ void retrieve_page_from_disk(struct proc* p, uint64 uvaddr) {
     /* Copy from temp kernel page to uvaddr (use copyout) */
 }
 
+void page_fault_handler(uint64 faulting_addr) {
+  struct proc *p = myproc();
+  printf("Page fault at address %p in process %s (pid: %d)\n", faulting_addr, p->name, p->pid);
 
-void page_fault_handler(void) 
-{
-    /* Current process struct */
-    struct proc *p = myproc();
+  // Check if the faulting address is within the heap region
+  if (faulting_addr >= p->sz) {
+    // Handle heap page fault
+    handle_heap_page_fault(p, faulting_addr);
+  } else {
+    // Handle program segment page fault
+    handle_program_segment_fault(p, faulting_addr);
+  }
 
-    /* Track whether the heap page should be brought back from disk or not. */
-    bool load_from_disk = false;
+  // Flush stale page table entries
+  sfence_vma();
+}
 
-    /* Find faulting address. */
-    uint64 faulting_addr = 0;
-    print_page_fault(p->name, faulting_addr);
-
-    /* Check if the fault address is a heap page. Use p->heap_tracker */
-    if (true) {
-        goto heap_handle;
+void handle_heap_page_fault(struct proc *p, uint64 faulting_addr) {
+  // Check if the faulting address is within the heap region
+  if (faulting_addr >= p->sz) {
+    // Grow the process's memory to include the faulting address
+    uint64 new_sz = PGROUNDUP(faulting_addr + 1);
+    if (new_sz > p->sz) {
+      if (growproc(new_sz - p->sz) < 0) {
+        panic("page_fault_handler: growproc failed");
+      }
     }
 
-    /* If it came here, it is a page from the program binary that we must load. */
-    print_load_seg(faulting_addr, 0, 0);
-
-    /* Go to out, since the remainder of this code is for the heap. */
-    goto out;
-
-heap_handle:
-    /* 2.4: Check if resident pages are more than heap pages. If yes, evict. */
-    if (p->resident_heap_pages == MAXRESHEAP) {
-        evict_page_to_disk(p);
+    // Update the heap tracker
+    for (int i = 0; i < MAXHEAP; i++) {
+      if (p->heap_tracker[i].addr == faulting_addr) {
+        p->heap_tracker[i].last_load_time = read_current_timestamp();
+        p->heap_tracker[i].loaded = true;
+        break;
+      }
     }
 
-    /* 2.3: Map a heap page into the process' address space. (Hint: check growproc) */
-
-    /* 2.4: Update the last load time for the loaded heap page in p->heap_tracker. */
-
-    /* 2.4: Heap page was swapped to disk previously. We must load it from disk. */
-    if (load_from_disk) {
-        retrieve_page_from_disk(p, faulting_addr);
-    }
-
-    /* Track that another heap page has been brought into memory. */
+    // Track that another heap page has been brought into memory
     p->resident_heap_pages++;
+  }
+}
 
-out:
-    /* Flush stale page table entries. This is important to always do. */
-    sfence_vma();
-    return;
+void handle_program_segment_fault(struct proc *p, uint64 faulting_addr) {
+  struct inode *ip = p->cwd;
+  struct elfhdr elf;
+  struct proghdr ph;
+  uint64 offset, va, sz;
+  int i;
+
+  ilock(ip);
+  if (readi(ip, 0, (uint64)&elf, 0, sizeof(elf)) != sizeof(elf)) {
+    panic("exec: read elf header failed");
+  }
+
+  if (elf.magic != ELF_MAGIC) {
+    panic("exec: not an ELF file");
+  }
+
+  for (i = 0, offset = elf.phoff; i < elf.phnum; i++, offset += sizeof(ph)) {
+    if (readi(ip, 0, (uint64)&ph, offset, sizeof(ph)) != sizeof(ph)) {
+      panic("exec: read program header failed");
+    }
+
+    if (ph.type != ELF_PROG_LOAD) {
+      continue;
+    }
+
+    if (faulting_addr >= ph.vaddr && faulting_addr < ph.vaddr + ph.memsz) {
+      va = PGROUNDDOWN(faulting_addr);
+      sz = PGSIZE;
+      if (uvmalloc(p->pagetable, va, va + sz, PTE_W | PTE_X | PTE_R | PTE_U) == 0) {
+        panic("exec: uvmalloc failed");
+      }
+
+      if (loadseg(p->pagetable, va, ip, ph.off + (va - ph.vaddr), sz) < 0) {
+        panic("exec: loadseg failed");
+      }
+
+      break;
+    }
+  }
+  iunlock(ip);
 }
