@@ -29,9 +29,7 @@ int flags2perm(int flags)
     return perm;
 }
 
-int
-exec(char *path, char **argv)
-{
+int exec(char *path, char **argv) {
   char *s, *last;
   int i, off;
   uint64 argc, sz = 0, sp, ustack[MAXARG], stackbase;
@@ -41,10 +39,8 @@ exec(char *path, char **argv)
   pagetable_t pagetable = 0, oldpagetable;
   struct proc *p = myproc();
 
-  /* CSE 536: (2.1) Check on-demand status. */
-  // if (p->ondemand == true) {
-  //   print_ondemand_proc(path);
-  // }
+  // Debugging output
+  printf("exec: current process: %s (pid: %d)\n", p->name, p->pid);
 
   begin_op();
 
@@ -70,7 +66,6 @@ exec(char *path, char **argv)
   } else {
     p->ondemand = true;
     print_ondemand_proc(path); // Print on-demand process info
-
   }
 
   // Load program into memory.
@@ -166,6 +161,9 @@ exec(char *path, char **argv)
     p->heap_tracker[i].loaded          = false;
   }
   p->resident_heap_pages = 0;
+
+  // Debugging output
+  printf("exec: new process: %s (pid: %d)\n", p->name, p->pid);
 
   return argc; // this ends up in a0, the first argument to main(argc, argv)
 
