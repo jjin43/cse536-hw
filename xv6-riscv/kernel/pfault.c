@@ -69,23 +69,6 @@ void retrieve_page_from_disk(struct proc* p, uint64 uvaddr) {
     /* Copy from temp kernel page to uvaddr (use copyout) */
 }
 
-void page_fault_handler(uint64 faulting_addr) {
-  struct proc *p = myproc();
-  printf("Page fault at address %p in process %s (pid: %d)\n", faulting_addr, p->name, p->pid);
-
-  // Check if the faulting address is within the heap region
-  if (faulting_addr >= p->sz) {
-    // Handle heap page fault
-    handle_heap_page_fault(p, faulting_addr);
-  } else {
-    // Handle program segment page fault
-    handle_program_segment_fault(p, faulting_addr);
-  }
-
-  // Flush stale page table entries
-  sfence_vma();
-}
-
 void handle_heap_page_fault(struct proc *p, uint64 faulting_addr) {
   // Check if the faulting address is within the heap region
   if (faulting_addr >= p->sz) {
@@ -151,4 +134,21 @@ void handle_program_segment_fault(struct proc *p, uint64 faulting_addr) {
     }
   }
   iunlock(ip);
+}
+
+void page_fault_handler(uint64 faulting_addr) {
+  struct proc *p = myproc();
+  printf("Page fault at address %p in process %s (pid: %d)\n", faulting_addr, p->name, p->pid);
+
+  // Check if the faulting address is within the heap region
+  if (faulting_addr >= p->sz) {
+    // Handle heap page fault
+    handle_heap_page_fault(p, faulting_addr);
+  } else {
+    // Handle program segment page fault
+    handle_program_segment_fault(p, faulting_addr);
+  }
+
+  // Flush stale page table entries
+  sfence_vma();
 }
