@@ -136,8 +136,7 @@ void handle_program_segment_fault(struct proc *p, uint64 faulting_addr) {
 
 void page_fault_handler(void) {
   struct proc *p = myproc();
-  uint64 faulting_addr = PGROUNDDOWN(r_stval());
-  print_page_fault(p->name, faulting_addr);
+  uint64 faulting_addr = r_stval() & (~(0xFFF));  print_page_fault(p->name, faulting_addr);
   printf("Page fault at address %p in process %s (pid: %d)\n", faulting_addr, p->name, p->pid);
 
   // Check if the faulting address is within the heap region
