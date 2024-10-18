@@ -1,4 +1,3 @@
-/* This file contains code for a generic page fault handler for processes. */
 #include "types.h"
 #include "param.h"
 #include "memlayout.h"
@@ -7,7 +6,6 @@
 #include "proc.h"
 #include "defs.h"
 #include "elf.h"
-
 #include "sleeplock.h"
 #include "fs.h"
 #include "buf.h"
@@ -137,7 +135,6 @@ void handle_program_segment_fault(struct proc *p, uint64 faulting_addr) {
 }
 
 void page_fault_handler(void) {
-
   struct proc *p = myproc();
   uint64 faulting_addr = PGROUNDDOWN(r_stval());
   print_page_fault(p->name, faulting_addr);
