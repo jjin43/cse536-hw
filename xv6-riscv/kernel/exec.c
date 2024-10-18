@@ -7,9 +7,6 @@
 #include "defs.h"
 #include "elf.h"
 
-// static 
-int loadseg(pde_t *, uint64, struct inode *, uint, uint);
-
 // Custom strcmp implementation
 int custom_strcmp(const char *s1, const char *s2) {
   while (*s1 && (*s1 == *s2)) {
@@ -89,13 +86,11 @@ int exec(char *path, char **argv) {
       if(loadseg(pagetable, ph.vaddr, ip, ph.off, ph.filesz) < 0)
         goto bad;
     } else {
-      // Test:
-      // uint64 sz1;
-      // if((sz1 = uvmalloc(pagetable, sz, ph.vaddr + ph.memsz, flags2perm(ph.flags))) == 0)
-      //   goto bad;
-      // sz = sz1;
-      // if(loadseg(pagetable, ph.vaddr, ip, ph.off, ph.filesz) < 0)
-      //   goto bad;
+      // On-demand loading: map the memory region but do not load the segment
+      uint64 sz1;
+      if((sz1 = uvmalloc(pagetable, sz, ph.vaddr + ph.memsz, flags2perm(ph.flags))) == 0)
+        goto bad;
+      sz = sz1;
 
       // Print skipped section info
       print_skip_section(path, ph.vaddr, ph.memsz);
@@ -185,14 +180,11 @@ int exec(char *path, char **argv) {
   return -1;
 }
 
-
 // Load a program segment into pagetable at virtual address va.
 // va must be page-aligned
 // and the pages from va to va+sz must already be mapped.
 // Returns 0 on success, -1 on failure.
-int
-loadseg(pagetable_t pagetable, uint64 va, struct inode *ip, uint offset, uint sz)
-{
+int loadseg(pagetable_t pagetable, uint64 va, struct inode *ip, uint offset, uint sz) {
   uint i, n;
   uint64 pa;
 
