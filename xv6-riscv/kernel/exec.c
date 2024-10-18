@@ -87,10 +87,7 @@ int exec(char *path, char **argv) {
         goto bad;
     } else {
       // On-demand loading: map the memory region but do not load the segment
-      uint64 sz1;
-      if((sz1 = uvmalloc(pagetable, sz, ph.vaddr + ph.memsz, flags2perm(ph.flags))) == 0)
-        goto bad;
-      sz = sz1;
+      sz = PGROUNDUP(ph.vaddr + ph.memsz); 
 
       // Print skipped section info
       print_skip_section(path, ph.vaddr, ph.memsz);
