@@ -68,9 +68,10 @@ usertrap(void)
     syscall();
   } else if((which_dev = devintr()) != 0){
     // ok
-  } else if(scause == 0xf || scause == 0xd || scause == 0xc) {
-    // Page fault exceptions: 0xf (store page fault), 0xd (load page fault), 0xc (instruction page fault)
-    page_fault_handler();
+    if(scause == 0xf || scause == 0xd || scause == 0xc) {
+      // Page fault exceptions: 0xf (store page fault), 0xd (load page fault), 0xc (instruction page fault)
+      page_fault_handler();
+    }
   } else {
     printf("usertrap(): unexpected scause %p pid=%d\n", scause, p->pid);
     printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
