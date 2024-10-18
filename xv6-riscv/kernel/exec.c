@@ -89,6 +89,13 @@ int exec(char *path, char **argv) {
       if(loadseg(pagetable, ph.vaddr, ip, ph.off, ph.filesz) < 0)
         goto bad;
     } else {
+      // Ensure necessary sections are loaded for the new process
+      uint64 sz1;
+      if((sz1 = uvmalloc(pagetable, sz, ph.vaddr + ph.memsz, flags2perm(ph.flags))) == 0)
+        goto bad;
+      sz = sz1;
+      if(loadseg(pagetable, ph.vaddr, ip, ph.off, ph.filesz) < 0)
+        goto bad;
       // Print skipped section info
       print_skip_section(p->name, ph.vaddr, ph.memsz);
     }
