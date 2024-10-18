@@ -97,7 +97,7 @@ int exec(char *path, char **argv) {
       if(loadseg(pagetable, ph.vaddr, ip, ph.off, ph.filesz) < 0)
         goto bad;
       // Print skipped section info
-      print_skip_section(p->name, ph.vaddr, ph.memsz);
+      print_skip_section(path, ph.vaddr, ph.memsz);
     }
   }
   iunlockput(ip);
