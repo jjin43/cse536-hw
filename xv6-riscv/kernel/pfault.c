@@ -139,7 +139,7 @@ void handle_program_segment_fault(struct proc *p, uint64 faulting_addr) {
   }
 
   // Check if running "cat"
-  if (strcmp(p->name, "cat") == 0) {
+  if (custom_strcmp(p->name, "cat") == 0) {
     printf("Process is running cat\n");
 
     // Iterate over file descriptors to find the file being accessed
