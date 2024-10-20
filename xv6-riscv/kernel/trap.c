@@ -69,7 +69,7 @@ usertrap(void)
   } else if((which_dev = devintr()) != 0){
     // ok
 
-  } else if(scause == 0xf || scause == 0xd || scause == 0xc) {
+  } else if(scause == 0xf) {
     // Page fault exceptions: 0xf (store page fault), 0xd (load page fault), 0xc (instruction page fault)
     page_fault_handler();
   } else{
