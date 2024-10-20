@@ -93,50 +93,74 @@ void handle_heap_page_fault(struct proc *p, uint64 faulting_addr) {
 }
 
 void handle_program_segment_fault(struct proc *p, uint64 faulting_addr) {
-  struct inode *ip = p->cwd;
+  struct inode *ip;
   struct elfhdr elf;
   struct proghdr ph;
   uint64 offset, va, sz;
   int i;
 
+
+  // From exec.c
   ilock(ip);
-  if (readi(ip, 0, (uint64)&elf, 0, sizeof(elf)) != sizeof(elf)) {
-    panic("exec: read elf header failed");
+  begin_op();
+  if((ip = namei(p->name)) == 0){
+    end_op();
   }
+  ilock(ip);
 
-  if (elf.magic != ELF_MAGIC) {
-    panic("exec: not an ELF file");
-  }
+  // Check ELF header
+  if(readi(ip, 0, (uint64)&elf, 0, sizeof(elf)) != sizeof(elf))
+    goto bad;
 
-  for (i = 0, offset = elf.phoff; i < elf.phnum; i++, offset += sizeof(ph)) {
-    if (readi(ip, 0, (uint64)&ph, offset, sizeof(ph)) != sizeof(ph)) {
-      panic("exec: read program header failed");
-    }
-
-    if (ph.type != ELF_PROG_LOAD) {
+  if(elf.magic != ELF_MAGIC)
+    goto bad;
+  
+  for(int i=0, off=elf.phoff; i<elf.phnum; i++, off+=sizeof(ph)){
+    if(readi(ip, 0, (uint64)&ph, off, sizeof(ph)) != sizeof(ph))
+      goto bad;
+    if(ph.type != ELF_PROG_LOAD)
       continue;
-    }
-
-    if (faulting_addr >= ph.vaddr && faulting_addr < ph.vaddr + ph.memsz) {
-      va = PGROUNDDOWN(faulting_addr);
-      sz = PGSIZE;
-      if (uvmalloc(p->pagetable, va, va + sz, PTE_W | PTE_X | PTE_R | PTE_U) == 0) {
-        panic("exec: uvmalloc failed");
-      }
-
-      if (loadseg(p->pagetable, va, ip, ph.off + (va - ph.vaddr), sz) < 0) {
-        panic("exec: loadseg failed");
-      }
-
+    if(ph.memsz < ph.filesz)
+      goto bad;
+    if(ph.vaddr + ph.memsz < ph.vaddr)
+      goto bad;
+    if(ph.vaddr % PGSIZE != 0)
+      goto bad;
+    
+    /* Check if faulting base addr is in current segment the allocate memory and load segment*/
+    if((faulting_addr >= ph.vaddr) && (faulting_addr < (ph.vaddr + ph.memsz))){
+    
+      uvmalloc(p->pagetable, ph.vaddr, ph.vaddr + ph.memsz, flags2perm(ph.flags));
+      
+      if(loadseg(p->pagetable, ph.vaddr, ip, ph.off, ph.filesz) < 0)
+        goto bad;
       break;
     }
   }
-  iunlock(ip);
+  iunlockput(ip);
+  end_op();
+  ip = 0;
+
+  print_load_seg(faulting_addr, ph.off, ph.memsz);
+  return;
+
+  bad:
+  if(p->pagetable)
+    proc_freepagetable(p->pagetable, sz);
+  if(ip){
+    iunlockput(ip);
+    end_op();
+  }
+  return;
+
+
 }
 
 void page_fault_handler(void) {
   struct proc *p = myproc();
-  uint64 faulting_addr = r_stval() & (~(0xFFF));  print_page_fault(p->name, faulting_addr);
+  uint64 faulting_addr = r_stval() & (~(0xFFF));
+
+  print_page_fault(p->name, faulting_addr);
   printf("Page fault at address %p in process %s (pid: %d)\n", faulting_addr, p->name, p->pid);
 
   // Check if the faulting address is within the heap region
