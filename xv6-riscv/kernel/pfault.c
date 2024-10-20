@@ -35,62 +35,128 @@ void init_psa_regions(void)
 
 /* Evict heap page to disk when resident pages exceed limit */
 void evict_page_to_disk(struct proc* p) {
-    /* Find free block */
-    int blockno = 0;
-    /* Find victim page using FIFO. */
-    /* Print statement. */
-    print_evict_page(0, 0);
-    /* Read memory from the user to kernel memory first. */
-    
-    /* Write to the disk blocks. Below is a template as to how this works. There is
-     * definitely a better way but this works for now. :p */
-    struct buf* b;
-    b = bread(1, PSASTART+(blockno));
-        // Copy page contents to b.data using memmove.
+  // Define the working set time window (e.g., 100 ticks)
+  uint64 working_set_window = 100;
+  uint64 current_time = read_current_timestamp();
+
+  // Find free PSA blocks
+  int blockno = -1;
+  for (int i = 0; i < PSASIZE; i += 4) {
+    if (!psa_tracker[i] && !psa_tracker[i+1] && !psa_tracker[i+2] && !psa_tracker[i+3]) {
+      blockno = i;
+      psa_tracker[i] = psa_tracker[i+1] = psa_tracker[i+2] = psa_tracker[i+3] = true;
+      break;
+    }
+  }
+  if (blockno == -1) {
+    panic("evict_page_to_disk: no free PSA blocks");
+  }
+
+  // Find a victim page using the Working Set algorithm
+  int victim_idx = -1;
+  for (int i = 0; i < MAXHEAP; i++) {
+    if (current_time - p->heap_tracker[i].last_access_time > working_set_window) {
+      victim_idx = i;
+      break;
+    }
+  }
+  if (victim_idx == -1) {
+    panic("evict_page_to_disk: no victim page found");
+  }
+
+  uint64 victim_va = p->heap_tracker[victim_idx].addr;
+  char *kpage = kalloc();
+  if (kpage == 0) {
+    panic("evict_page_to_disk: kalloc");
+  }
+  if (copyin(p->pagetable, kpage, victim_va, PGSIZE) != 0) {
+    kfree(kpage);
+    panic("evict_page_to_disk: copyin");
+  }
+
+  struct buf* b;
+  for (int i = 0; i < 4; i++) {
+    b = bread(1, PSASTART + blockno + i);
+    memmove(b->data, kpage + i * 1024, 1024);
     bwrite(b);
     brelse(b);
+  }
+  kfree(kpage);
 
-    /* Unmap swapped out page */
-    /* Update the resident heap tracker. */
+  // Unmap the victim page
+  uvmunmap(p->pagetable, victim_va, 1, 1);
+
+  // Update heap_tracker
+  p->heap_tracker[victim_idx].startblock = blockno;
+  p->resident_heap_pages--;
+
+  // Print statement
+  print_evict_page(victim_va, blockno);
 }
 
 /* Retrieve faulted page from disk. */
 void retrieve_page_from_disk(struct proc* p, uint64 uvaddr) {
-    /* Find where the page is located in disk */
+  // Find where the page is located in disk
+  int blockno = -1;
+  for (int i = 0; i < MAXHEAP; i++) {
+    if (p->heap_tracker[i].addr == uvaddr) {
+      blockno = p->heap_tracker[i].startblock;
+      break;
+    }
+  }
+  if (blockno == -1) {
+    panic("retrieve_page_from_disk: page not found in disk");
+  }
 
-    /* Print statement. */
-    print_retrieve_page(0, 0);
+  // Create a kernel page to read memory temporarily into first
+  char *kpage = kalloc();
+  if (kpage == 0) {
+    panic("retrieve_page_from_disk: kalloc");
+  }
 
-    /* Create a kernel page to read memory temporarily into first. */
-    
-    /* Read the disk block into temp kernel page. */
+  // Read the disk block into temp kernel page
+  struct buf* b;
+  for (int i = 0; i < 4; i++) {
+    b = bread(1, PSASTART + blockno + i);
+    memmove(kpage + i * 1024, b->data, 1024);
+    brelse(b);
+  }
 
-    /* Copy from temp kernel page to uvaddr (use copyout) */
+  // Copy from temp kernel page to uvaddr
+  if (copyout(p->pagetable, uvaddr, kpage, PGSIZE) != 0) {
+    kfree(kpage);
+    panic("retrieve_page_from_disk: copyout");
+  }
+  kfree(kpage);
+
+  // Print statement
+  print_retrieve_page(uvaddr, blockno);
 }
 
 void handle_heap_page_fault(struct proc *p, uint64 faulting_addr) {
-  // Check if the faulting address is within the heap region
-  if (faulting_addr >= p->sz) {
-    // Grow the process's memory to include the faulting address
-    uint64 new_sz = PGROUNDUP(faulting_addr + 1);
-    if (new_sz > p->sz) {
-      if (growproc(new_sz - p->sz) < 0) {
-        panic("page_fault_handler: growproc failed");
-      }
-    }
-
-    // Update the heap tracker
-    for (int i = 0; i < MAXHEAP; i++) {
-      if (p->heap_tracker[i].addr == faulting_addr) {
-        p->heap_tracker[i].last_load_time = read_current_timestamp();
-        p->heap_tracker[i].loaded = true;
-        break;
-      }
-    }
-
-    // Track that another heap page has been brought into memory
-    p->resident_heap_pages++;
+  // Allocate a new physical page and map it to the faulted address
+  char *mem = kalloc();
+  if (mem == 0) {
+    panic("handle_heap_page_fault: kalloc");
   }
+  memset(mem, 0, PGSIZE);
+  if (mappages(p->pagetable, faulting_addr, PGSIZE, (uint64)mem, PTE_W | PTE_X | PTE_R | PTE_U) != 0) {
+    kfree(mem);
+    panic("handle_heap_page_fault: mappages");
+  }
+
+  // Track heap page load and access time
+  for (int i = 0; i < MAXHEAP; i++) {
+    if (p->heap_tracker[i].addr == faulting_addr) {
+      uint64 current_time = read_current_timestamp();
+      p->heap_tracker[i].last_load_time = current_time;
+      p->heap_tracker[i].last_access_time = current_time;
+      break;
+    }
+  }
+
+  // Update resident heap pages
+  p->resident_heap_pages++;
 }
 
 void handle_program_segment_fault(struct proc *p, uint64 faulting_addr) {
@@ -135,58 +201,6 @@ void handle_program_segment_fault(struct proc *p, uint64 faulting_addr) {
       if(loadseg(p->pagetable, ph.vaddr, ip, ph.off, ph.filesz) < 0)
         goto bad;
       break;
-    }
-  }
-
-  // Check if running "cat"
-  if (custom_strcmp(p->name, "cat") == 0) {
-    printf("Process is running cat\n");
-
-    // Iterate over file descriptors to find the file being accessed
-    for (int fd = 0; fd < NOFILE; fd++) {
-      struct file *f = p->ofile[fd];
-      if (f && f->type == FD_INODE) {
-        struct inode *file_ip = f->ip;
-        ilock(file_ip);
-        printf("Locked inode for file descriptor %d\n", fd);
-
-        // Allocate memory for the file contents
-        uint64 file_size = file_ip->size;
-        char *file_buffer = kalloc();
-        if(file_buffer == 0) {
-          iunlockput(file_ip);
-          goto bad;
-        }
-
-        // Read the file contents into the buffer
-        if(readi(file_ip, 0, (uint64)file_buffer, 0, file_size) != file_size) {
-          kfree(file_buffer);
-          iunlockput(file_ip);
-          goto bad;
-        }
-
-        // Allocate memory in the process's address space
-        uint64 file_va = PGROUNDUP(p->sz);
-        if(uvmalloc(p->pagetable, file_va, file_va + file_size, PTE_U | PTE_R | PTE_W | PTE_X) < 0) {
-          kfree(file_buffer);
-          iunlockput(file_ip);
-          goto bad;
-        }
-
-        // Copy the file contents to the user space
-        if(copyout(p->pagetable, file_va, file_buffer, file_size) < 0) {
-          kfree(file_buffer);
-          iunlockput(file_ip);
-          goto bad;
-        }
-
-        // Update the process size
-        p->sz = file_va + file_size;
-
-        // Clean up
-        kfree(file_buffer);
-        iunlockput(file_ip);
-      }
     }
   }
 
