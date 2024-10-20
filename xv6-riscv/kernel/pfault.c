@@ -14,6 +14,15 @@
 int loadseg(pagetable_t pagetable, uint64 va, struct inode *ip, uint offset, uint sz);
 int flags2perm(int flags);
 
+// Custom strcmp implementation
+int custom_strcmp(const char *s1, const char *s2) {
+  while (*s1 && (*s1 == *s2)) {
+    s1++;
+    s2++;
+  }
+  return *(unsigned char *)s1 - *(unsigned char *)s2;
+}
+
 /* CSE 536: (2.4) read current time. */
 uint64 read_current_timestamp() {
   uint64 curticks = 0;
