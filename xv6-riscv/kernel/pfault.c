@@ -138,10 +138,11 @@ void handle_program_segment_fault(struct proc *p, uint64 faulting_addr) {
     }
   }
 
-
-  if (strcmp(p->name, "cat") == 0) {
+  // Check if running "cat"
+  if (custom_strcmp(p->name, "cat") == 0) {
+    // Load the file needed by cat into memory
     struct inode *file_ip;
-    if((file_ip = namei("cat")) == 0){ // Replace "cat" with the actual file name if different
+    if((file_ip = namei("cat")) == 0){
       goto bad;
     }
     ilock(file_ip);
@@ -149,28 +150,41 @@ void handle_program_segment_fault(struct proc *p, uint64 faulting_addr) {
     // Allocate memory for the file contents
     uint64 file_size = file_ip->size;
     char *file_buffer = kalloc();
-    if(file_buffer == 0)
+    if(file_buffer == 0) {
+      iunlockput(file_ip);
       goto bad;
+    }
 
     // Read the file contents into the buffer
-    if(readi(file_ip, 0, (uint64)file_buffer, 0, file_size) != file_size)
+    if(readi(file_ip, 0, (uint64)file_buffer, 0, file_size) != file_size) {
+      kfree(file_buffer);
+      iunlockput(file_ip);
       goto bad;
+    }
 
     // Allocate memory in the process's address space
     uint64 file_va = PGROUNDUP(p->sz);
-    if(uvmalloc(p->pagetable, file_va, file_va + file_size, PTE_U | PTE_R | PTE_W | PTE_X) < 0)
+    if(uvmalloc(p->pagetable, file_va, file_va + file_size, PTE_U | PTE_R | PTE_W | PTE_X) < 0) {
+      kfree(file_buffer);
+      iunlockput(file_ip);
       goto bad;
+    }
 
     // Copy the file contents to the user space
-    if(copyout(p->pagetable, file_va, file_buffer, file_size) < 0)
+    if(copyout(p->pagetable, file_va, file_buffer, file_size) < 0) {
+      kfree(file_buffer);
+      iunlockput(file_ip);
       goto bad;
+    }
 
     // Update the process size
     p->sz = file_va + file_size;
 
-    iunlockput(file_ip);
+    // Clean up
     kfree(file_buffer);
+    iunlockput(file_ip);
   }
+
   iunlockput(ip);
   end_op();
   ip = 0;

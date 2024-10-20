@@ -203,3 +203,12 @@ void print_retrieve_page(uint64 vaddr, int startblock);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
+
+// Custom strcmp implementation
+int custom_strcmp(const char *s1, const char *s2) {
+  while (*s1 && (*s1 == *s2)) {
+    s1++;
+    s2++;
+  }
+  return *(unsigned char *)s1 - *(unsigned char *)s2;
+}
