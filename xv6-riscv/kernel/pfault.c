@@ -101,11 +101,12 @@ void handle_program_segment_fault(struct proc *p, uint64 faulting_addr) {
 
 
   // From exec.c
-  ilock(ip);
   begin_op();
   if((ip = namei(p->name)) == 0){
     end_op();
   }
+  ilock(ip);
+
   // Check ELF header
   if(readi(ip, 0, (uint64)&elf, 0, sizeof(elf)) != sizeof(elf))
     goto bad;
