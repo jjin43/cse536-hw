@@ -144,7 +144,7 @@ void handle_heap_page_fault(struct proc *p, uint64 faulting_addr) {
     kfree(mem);
     panic("handle_heap_page_fault: mappages");
   }
-
+  
   // Track heap page load and access time
   for (int i = 0; i < MAXHEAP; i++) {
     if (p->heap_tracker[i].addr == faulting_addr) {

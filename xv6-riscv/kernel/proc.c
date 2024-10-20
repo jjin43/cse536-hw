@@ -286,8 +286,14 @@ growproc(int n)
 
   sz = p->sz;
   if(n > 0){
-    if((sz = uvmalloc(p->pagetable, sz, sz + n, PTE_W)) == 0) {
-      return -1;
+    if (p->ondemand) {
+      track_heap(p, sz, n / PGSIZE);
+      print_skip_heap_region(p->name, sz, n / PGSIZE);
+      p->sz = sz + n;
+    } else {
+      if((sz = uvmalloc(p->pagetable, sz, sz + n, PTE_W | PTE_X | PTE_R | PTE_U)) == 0)
+        return -1;
+      p->sz = sz;
     }
   } else if(n < 0){
     sz = uvmdealloc(p->pagetable, sz, sz + n);
