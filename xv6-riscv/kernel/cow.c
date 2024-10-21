@@ -95,60 +95,69 @@ int uvmcopy_cow(pagetable_t old, pagetable_t new, uint64 sz) {
     pte_t *pte;
     uint64 pa, i;
     uint flags;
-    for (i = 0; i < sz; i += PGSIZE) {
-        if ((pte = walk(old, i, 0)) == 0)
-            panic("uvmcopy_cow: pte should exist");
-        if ((*pte & PTE_V) == 0)
-            panic("uvmcopy_cow: page not present");
-        pa = PTE2PA(*pte);
-        flags = PTE_FLAGS(*pte);
-        flags &= ~PTE_W; // Remove write permission
-        flags |= PTE_R;  // Ensure read permission
-        if (mappages(new, i, PGSIZE, pa, flags) != 0) {
-            goto err;
-        }
-        *pte &= ~PTE_W; // Remove write permission from parent
-        *pte |= PTE_R;  // Ensure read permission in parent
-    }
-    return 0;
+    // Copy user vitual memory from old(parent) to new(child) process
 
-err:
-    uvmunmap(new, 0, i / PGSIZE, 1);
-    return -1;
+    // Map pages as Read-Only in both the processes
+    for(i = 0; i < sz; i += PGSIZE){
+      if((pte = walk(old, i, 0)) == 0)
+        panic("uvmcopy: pte should exist");
+      if((*pte & PTE_V) == 0)
+        panic("uvmcopy: page not present");
+      pa = PTE2PA(*pte);
+      flags = PTE_FLAGS(*pte) & (~PTE_W); // removing write permission
+    
+     mappages(new, i, PGSIZE, pa, flags);
+     uvmunmap(old, i, 1, 0);
+     mappages(old, i, PGSIZE, pa, flags);
+   }
+   return 0;
 }
 
-void copy_on_write() {
-    struct proc *p = myproc();
-    uint64 va = r_stval(); // Faulting virtual address
+int copy_on_write(struct proc* p, uint64 fault_addr) {
+    /* CSE 536: (2.6.2) Handling Copy-on-write */
+    
     pte_t *pte;
     uint64 pa;
-    char *mem;
     uint flags;
-
-    // Get the PTE for the faulting address
-    if ((pte = walk(p->pagetable, va, 0)) == 0)
-        panic("copy_on_write: pte should exist");
-    if ((*pte & PTE_V) == 0)
-        panic("copy_on_write: page not present");
-
+    
+    // Allocate a new page 
+    pte = walk(p->pagetable, fault_addr, 0);
     pa = PTE2PA(*pte);
-    flags = PTE_FLAGS(*pte);
-
-    // Allocate a new page
-    if ((mem = kalloc()) == 0)
-        panic("copy_on_write: kalloc failed");
-
+    
     // Copy contents from the shared page to the new page
-    memmove(mem, (char*)pa, PGSIZE);
-
-    // Map the new page in the faulting process's page table with write permissions
-    flags |= PTE_W; // Add write permission
-    flags &= ~PTE_R; // Remove read-only flag
-    if (mappages(p->pagetable, va, PGSIZE, (uint64)mem, flags) != 0) {
+    if(is_shmem(p->cow_group, pa)){
+      char *mem = kalloc();
+      memmove(mem, (char*)pa, PGSIZE);
+      
+      // Map the new page in the faulting process's page table with write permissions
+      flags = PTE_FLAGS(*pte) | PTE_W;
+      uvmunmap(p->pagetable, fault_addr, 1, 0);
+      
+      if(mappages(p->pagetable, fault_addr, PGSIZE, (uint64)pa, flags) != 0){
         kfree(mem);
-        panic("copy_on_write: mappages failed");
+     }
+     
+     print_copy_on_write(p, fault_addr);
+     
+     kfree(mem);
+     return 1;
     }
+    return 0;
+}
 
-    // Add debug statement
-    print_copy_on_write(p, va);
+void erase_cow_group(int pid){
+
+  for(int i=0; i<NPROC; i++){
+    if(cow_group[i].group == pid){
+      cow_group[i].count = 0;
+      cow_group[i].group = -1;
+      
+      for(int j=0; j<SHMEM_MAX; j++){
+	cow_group[i].shmem[j] = 0;      
+      }
+      
+      return;
+    }
+  }
+
 }

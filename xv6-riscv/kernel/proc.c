@@ -158,8 +158,37 @@ freeproc(struct proc *p)
   if(p->trapframe)
     kfree((void*)p->trapframe);
   p->trapframe = 0;
-  if(p->pagetable)
-    proc_freepagetable(p->pagetable, p->sz);
+  
+  
+  if(p->pagetable){
+    if(p->cow_enabled){
+      decr_cow_group_count(p->cow_group);
+      
+      if(get_cow_group_count(p->cow_group)==0){
+        erase_cow_group(p->cow_group);
+        proc_freepagetable(p->pagetable, p->sz);
+      }else{
+        uvmunmap(p->pagetable, TRAMPOLINE, 1, 0);
+        uvmunmap(p->pagetable, TRAPFRAME, 1, 0);
+        
+        pte_t *pte;
+        uint64 pa;
+        
+        for(int i=0; i < p->sz; i = i+PGSIZE){
+          pte = walk(p->pagetable, i, 0);
+          pa = PTE2PA(*pte);
+          
+          if(is_shmem(p->cow_group, pa)){
+            uvmunmap(p->pagetable, i, 1, 0);
+          }else{
+            uvmunmap(p->pagetable, i, 1, 1);
+          }
+        }
+      }
+    }else{
+      proc_freepagetable(p->pagetable, p->sz);
+    }
+  } 
   p->pagetable = 0;
   p->sz = 0;
   p->pid = 0;
@@ -315,6 +344,33 @@ fork(int cow_enabled)
   // Allocate process.
   if((np = allocproc()) == 0){
     return -1;
+  }
+
+  if(cow_enabled == 1){
+  printf("print %d", p->sz);
+    uvmcopy_cow(p->pagetable, np->pagetable, p->sz);
+    
+    if(!p->cow_enabled){
+      p->cow_group = p->pid;
+      p->cow_enabled = true;
+      
+      cow_group_init(p->cow_group);
+      incr_cow_group_count(p->cow_group);
+    }
+    
+    np->cow_enabled = 1;
+    
+    np->cow_group = p->cow_group;
+    incr_cow_group_count(p->cow_group);
+    
+    pte_t *pte;
+    uint64 pa;
+    
+    for(int i=0; i<p->sz; i = i + PGSIZE){
+      pte = walk(p->pagetable, i, 0);
+      pa = PTE2PA(*pte);
+      add_shmem(p->cow_group, pa);
+    }
   }
 
   /* CSE 536: (3.1) Modify fork() to handle CoW */
