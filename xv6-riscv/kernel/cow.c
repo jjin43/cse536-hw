@@ -133,6 +133,7 @@ int copy_on_write(struct proc* p, uint64 fault_addr) {
     pa = PTE2PA(*pte);
     printf("CP-1\n");
     // Check if the page is shared
+    printf("p->cow_group: %d, pa %p\n", p->cow_group, pa);
     if(is_shmem(p->cow_group, pa)){
         printf("CP-1.5\n");
         char *mem = kalloc();
