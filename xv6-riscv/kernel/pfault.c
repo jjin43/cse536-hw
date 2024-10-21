@@ -243,7 +243,7 @@ void page_fault_handler(void) {
   print_page_fault(p->name, faulting_addr);
 
       /* cow checking*/
-  if((p->cow_enabled) && (r_scause() == 15 || r_scause==13)){
+  if((p->cow_enabled) && (r_scause() == 15 || r_scause()==13)){
     if(copy_on_write(p, faulting_addr) == 1)
       sfence_vma();
       return;  
