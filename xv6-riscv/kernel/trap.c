@@ -51,6 +51,16 @@ usertrap(void)
   p->trapframe->epc = r_sepc();
 
   uint64 scause = r_scause();
+
+  if(scause == 0xf) { // Store page fault
+    uint64 va = r_stval();
+    pte_t *pte = walk(p->pagetable, va, 0);
+    if(pte && (*pte & PTE_V) && (*pte & PTE_R) && !(*pte & PTE_W)) {
+      // Handle copy-on-write
+      copy_on_write();
+      return;
+    }
+  }
   
   if(scause == 0xf || scause == 0xd || scause == 0xc){
     // Page fault exceptions: 0xf (store page fault), 0xd (load page fault), 0xc (instruction page fault)

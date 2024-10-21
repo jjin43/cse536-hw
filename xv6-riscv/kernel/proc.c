@@ -169,6 +169,8 @@ freeproc(struct proc *p)
   p->killed = 0;
   p->xstate = 0;
   p->state = UNUSED;
+  p->cow_enabled = 0;
+  p->cow_group = 0;
 }
 
 // Create a user page table for a given process, with no user memory,
@@ -316,20 +318,25 @@ fork(int cow_enabled)
     return -1;
   }
 
-  /* CSE 536: (3.1) Modify fork() to handle CoW */
-  
-  // Currently fork() does not handle the case for when CoW is enable
-  // You will have to implement the same
+  if (cow_enabled) {
+    // Set the appropriate metadata to track a CoW group
+    np->cow_enabled = 1;
+    np->cow_group = p->pid;
 
-  // Set the appropriate metadata to track a CoW group
-
-  // implement and call the uvm_copy() function defined in cow.c
-
-  // Copy user memory from parent to child.
-  if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
-    freeproc(np);
-    release(&np->lock);
-    return -1;
+    // Copy user memory from parent to child with CoW
+    if(uvmcopy_cow(p->pagetable, np->pagetable, p->sz) < 0){
+      // Failed, free process
+      freeproc(np);
+      release(&np->lock);
+      return -1;
+    }
+  } else {
+    // Copy user memory from parent to child.
+    if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
+      freeproc(np);
+      release(&np->lock);
+      return -1;
+    }
   }
   np->sz = p->sz;
 
