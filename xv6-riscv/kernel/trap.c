@@ -52,7 +52,7 @@ usertrap(void)
 
   uint64 scause = r_scause();
 
-  if(scause == 0xf) { // Store page fault
+  if(scause == 0xf || scause == 0xd) { // Store page fault
     uint64 va = r_stval();
     pte_t *pte = walk(p->pagetable, va, 0);
     if(pte && (*pte & PTE_V) && (*pte & PTE_R) && !(*pte & PTE_W)) {

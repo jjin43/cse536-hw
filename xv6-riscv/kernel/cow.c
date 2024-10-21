@@ -130,9 +130,11 @@ void copy_on_write() {
     uint64 pa;
     char *mem;
 
+    printf("Here1\n");
     // Get the PTE for the faulting address
     if((pte = walk(p->pagetable, va, 0)) == 0)
         panic("copy_on_write: pte should exist");
+    printf("Here2\n");
     if((*pte & PTE_V) == 0)
         panic("copy_on_write: page not present");
     pa = PTE2PA(*pte);
@@ -147,6 +149,7 @@ void copy_on_write() {
 
     // Copy contents from the shared page to the new page
     memmove(mem, (char*)pa, PGSIZE);
+    printf("Here3\n");
 
     // Map the new page in the faulting process's page table with write permissions
     *pte = PA2PTE(mem) | PTE_FLAGS(*pte) | PTE_W;
