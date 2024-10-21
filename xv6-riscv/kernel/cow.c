@@ -27,7 +27,6 @@ struct cow_group* get_cow_group(int group) {
     for(int i = 0; i < NPROC; i++) {
         if(cow_group[i].group == group)
             return &cow_group[i];
-        printf("iterating: %d\n", i);
     }
     return 0;
 }
@@ -73,9 +72,12 @@ int is_shmem(int group, uint64 pa) {
 
     uint64 *shmem = get_cow_group(group)->shmem;
     for(int i = 0; i < SHMEM_MAX; i++) {
+        printf("iteration: %d", shmem[i]);
         if(shmem[i] == 0)
+            printf("is_shmem: page not found\n");
             return 0;
         if(shmem[i] == pa)
+            printf("is_shmem: page found\n");
             return 1;
     }
     printf("is_shmem: page not found\n");
