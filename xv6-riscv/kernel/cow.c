@@ -92,88 +92,22 @@ void cow_init() {
 }
 
 int uvmcopy_cow(pagetable_t old, pagetable_t new, uint64 sz) {
-    pte_t *pte;
-    uint64 pa, i;
-    uint flags;
+    
+    /* CSE 536: (2.6.1) Handling Copy-on-write fork() */
 
-    for (i = 0; i < sz; i += PGSIZE) {
-        if ((pte = walk(old, i, 0)) == 0)
-            panic("uvmcopy_cow: pte should exist");
-        if ((*pte & PTE_V) == 0)
-            panic("uvmcopy_cow: page not present");
+    // Copy user vitual memory from old(parent) to new(child) process
 
-        pa = PTE2PA(*pte);
-        flags = PTE_FLAGS(*pte);
+    // Map pages as Read-Only in both the processes
 
-        // Remove write permission and set read-only permission
-        flags &= ~PTE_W;
-        flags |= PTE_R;
-
-        // Check if the address is already mapped
-        if (walk(new, i, 0) != 0) {
-            panic("uvmcopy_cow: address already mapped");
-        }
-
-        // Map the page in the child process's page table
-        if (mappages(new, i, PGSIZE, pa, flags) != 0) {
-            goto err;
-        }
-
-        // Update the parent process's PTE to be read-only
-        *pte &= ~PTE_W;
-        *pte |= PTE_R;
-    }
     return 0;
-
-err:
-    uvmunmap(new, 0, i / PGSIZE, 1);
-    return -1;
 }
 
-int copy_on_write(struct proc* p, uint64 fault_addr) {
+void copy_on_write() {
     /* CSE 536: (2.6.2) Handling Copy-on-write */
-    
-    pte_t *pte;
-    uint64 pa;
-    uint flags;
-    
+
     // Allocate a new page 
-    pte = walk(p->pagetable, fault_addr, 0);
-    pa = PTE2PA(*pte);
     
     // Copy contents from the shared page to the new page
-    if(is_shmem(p->cow_group, pa)){
-        char *mem = kalloc();
-        memmove(mem, (char*)pa, PGSIZE);
-        
-        // Map the new page in the faulting process's page table with write permissions
-        flags = PTE_FLAGS(*pte) | PTE_W;
-        uvmunmap(p->pagetable, fault_addr, 1, 0);
-        if(mappages(p->pagetable, fault_addr, PGSIZE, (uint64)pa, flags) != 0){
-        kfree(mem);
-        }
-        
-        print_copy_on_write(p, fault_addr);
-        
-        kfree(mem);
-        return 1;
-    }
-    return 0;
-}
 
-void erase_cow_group(int pid){
-
-  for(int i=0; i<NPROC; i++){
-    if(cow_group[i].group == pid){
-      cow_group[i].count = 0;
-      cow_group[i].group = -1;
-      
-      for(int j=0; j<SHMEM_MAX; j++){
-	cow_group[i].shmem[j] = 0;      
-      }
-      
-      return;
-    }
-  }
-
+    // Map the new page in the faulting process's page table with write permissions
 }

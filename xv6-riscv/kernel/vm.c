@@ -290,7 +290,7 @@ freewalk(pagetable_t pagetable)
     } else if(pte & PTE_V){
       // a leaf entry, should not be treated as a pointer to a lower-level page table.
       continue;
-      // panic("freewalk: leaf");
+      //panic("freewalk: leaf");
     }
   }
   kfree((void*)pagetable);
