@@ -345,25 +345,46 @@ fork(int cow_enabled)
     return -1;
   }
 
-  if (cow_enabled) {
-    // Set the appropriate metadata to track a CoW group
+  /* CSE 536: (3.1) Modify fork() to handle CoW */
+  if(cow_enabled == 1){
+  printf("print %d", p->sz);
+    uvmcopy_cow(p->pagetable, np->pagetable, p->sz);
+    
+    if(!p->cow_enabled){
+      p->cow_group = p->pid;
+      p->cow_enabled = true;
+      
+      cow_group_init(p->cow_group);
+      incr_cow_group_count(p->cow_group);
+    }
+    
     np->cow_enabled = 1;
-    np->cow_group = p->pid;
+    
+    np->cow_group = p->cow_group;
+    incr_cow_group_count(p->cow_group);
+    
+    pte_t *pte;
+    uint64 pa;
+    
+    for(int i=0; i<p->sz; i = i + PGSIZE){
+      pte = walk(p->pagetable, i, 0);
+      pa = PTE2PA(*pte);
+      add_shmem(p->cow_group, pa);
+    }
+  }
+  
+  // Currently fork() does not handle the case for when CoW is enable
+  // You will have to implement the same
 
-    // Copy user memory from parent to child with CoW
-    if(uvmcopy_cow(p->pagetable, np->pagetable, p->sz) < 0){
-      // Failed, free process
-      freeproc(np);
-      release(&np->lock);
-      return -1;
-    }
-  } else {
-    // Copy user memory from parent to child.
-    if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
-      freeproc(np);
-      release(&np->lock);
-      return -1;
-    }
+  // Set the appropriate metadata to track a CoW group
+
+  // implement and call the uvm_copy() function defined in cow.c
+
+  // Copy user memory from parent to child.
+  else if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
+    freeproc(np);
+    release(&np->lock);
+    return -1;
   }
   np->sz = p->sz;
 
