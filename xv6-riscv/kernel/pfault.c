@@ -88,6 +88,7 @@ void evict_page_to_disk(struct proc* p) {
 
   // Update heap_tracker
   p->heap_tracker[victim_idx].startblock = blockno;
+  p->heap_tracker[victim_idx].loaded = false;
   p->resident_heap_pages--;
 
   // Print statement
@@ -151,6 +152,7 @@ void handle_heap_page_fault(struct proc *p, uint64 faulting_addr) {
       uint64 current_time = read_current_timestamp();
       p->heap_tracker[i].last_load_time = current_time;
       p->heap_tracker[i].last_access_time = current_time;
+      p->heap_tracker[i].loaded = true;
       break;
     }
   }
