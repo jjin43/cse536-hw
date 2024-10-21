@@ -155,37 +155,44 @@ found:
 static void
 freeproc(struct proc *p)
 {
+  // Freetrapframe
   if(p->trapframe)
     kfree((void*)p->trapframe);
   p->trapframe = 0;
   
-  
+  // Free page table
   if(p->pagetable){
+    // Handle CoW
     if(p->cow_enabled){
       decr_cow_group_count(p->cow_group);
       
-      if(get_cow_group_count(p->cow_group)==0){
-        erase_cow_group(p->cow_group);
+      // If no more processes are using this CoW group, delete
+      if(get_cow_group_count(p->cow_group) == 0){
+        delete_cow_group(p->cow_group);
         proc_freepagetable(p->pagetable, p->sz);
-      }else{
+      } else {
+        // else unmap the pages
         uvmunmap(p->pagetable, TRAMPOLINE, 1, 0);
         uvmunmap(p->pagetable, TRAPFRAME, 1, 0);
         
         pte_t *pte;
         uint64 pa;
         
-        for(int i=0; i < p->sz; i = i+PGSIZE){
+        // Walk process address space
+        for(int i = 0; i < p->sz; i += PGSIZE){
           pte = walk(p->pagetable, i, 0);
           pa = PTE2PA(*pte);
           
+          // Unmap shared memory pages
           if(is_shmem(p->cow_group, pa)){
             uvmunmap(p->pagetable, i, 1, 0);
-          }else{
+          } else {
             uvmunmap(p->pagetable, i, 1, 1);
           }
         }
       }
-    }else{
+    } else {
+      // Case NOT CoW
       proc_freepagetable(p->pagetable, p->sz);
     }
   } 
@@ -347,9 +354,10 @@ fork(int cow_enabled)
 
   /* CSE 536: (3.1) Modify fork() to handle CoW */
   if(cow_enabled == 1){
-  printf("print %d", p->sz);
+    // Copy page table entries, parent to child
     uvmcopy_cow(p->pagetable, np->pagetable, p->sz);
     
+    // Initialize parent cow group if needed
     if(!p->cow_enabled){
       p->cow_group = p->pid;
       p->cow_enabled = true;
@@ -358,18 +366,19 @@ fork(int cow_enabled)
       incr_cow_group_count(p->cow_group);
     }
     
+    // Assign child to the same CoW group
     np->cow_enabled = 1;
-    
     np->cow_group = p->cow_group;
-    incr_cow_group_count(p->cow_group);
+    incr_cow_group_count(p->cow_group); // Increment the reference count for the CoW group
     
     pte_t *pte;
     uint64 pa;
     
-    for(int i=0; i<p->sz; i = i + PGSIZE){
+    // Add parent's shared memory pages to the CoW group
+    for(int i = 0; i < p->sz; i += PGSIZE){
       pte = walk(p->pagetable, i, 0);
       pa = PTE2PA(*pte);
-      add_shmem(p->cow_group, pa);
+      add_shmem(p->cow_group, pa); // Add physical address to shared memory list
     }
   }
   

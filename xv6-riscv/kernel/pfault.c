@@ -242,10 +242,9 @@ void page_fault_handler(void) {
 
   print_page_fault(p->name, faulting_addr);
 
-      /* cow checking*/
-  if((p->cow_enabled) && (r_scause() == 15 || r_scause()==13)){
+  /* cow checking*/
+  if((p->cow_enabled) && (r_scause() == 0xf || r_scause()== 0xd)){
     if(copy_on_write(p, faulting_addr) == 1)
-      printf("Copy on write successful\n");
       sfence_vma();
       return;  
   }

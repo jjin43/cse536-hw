@@ -36,7 +36,6 @@ int exec(char *path, char **argv) {
   pagetable_t pagetable = 0, oldpagetable;
   struct proc *p = myproc();
 
-  // Debugging output
   // printf("exec: current process: %s (pid: %d)\n", p->name, p->pid);
 
   begin_op();
@@ -57,12 +56,12 @@ int exec(char *path, char **argv) {
   if((pagetable = proc_pagetable(p)) == 0)
     goto bad;
 
-  // Determine if the process should be on-demand
+  // Determine if  on-demand
   if (custom_strcmp(path, "/init") == 0 || custom_strcmp(path, "sh") == 0 || custom_strcmp(path, "test8-cow1") == 0 || custom_strcmp(path, "test9-cow2") == 0 || custom_strcmp(path, "test10-cow3") == 0) {
     p->ondemand = false;
   } else {
     p->ondemand = true;
-    print_ondemand_proc(path); // Print on-demand process info
+    print_ondemand_proc(path);
   }
 
   cow_init();
@@ -166,7 +165,6 @@ int exec(char *path, char **argv) {
   }
   p->resident_heap_pages = 0;
 
-  // Debugging output
   // printf("exec: new process: %s (pid: %d)\n", p->name, p->pid);
 
   return argc; // this ends up in a0, the first argument to main(argc, argv)

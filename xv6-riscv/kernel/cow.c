@@ -92,13 +92,9 @@ void cow_init() {
 int uvmcopy_cow(pagetable_t old, pagetable_t new, uint64 sz) {
     /* CSE 536: (2.6.1) Handling Copy-on-write fork() */
     
-    /*
-    following code referred from -  https://github.com/mit-pdos/xv6-riscv/blob/f5b93ef12f7159f74f80f94729ee4faabe42c360/kernel/vm.c#L306
-    */
     pte_t *pte;
     uint64 pa, i;
     uint flags;
-    // Copy user virtual memory from old(parent) to new(child) process
 
     // Map pages as Read-Only in both the processes
     for(i = 0; i < sz; i += PGSIZE){
@@ -107,7 +103,8 @@ int uvmcopy_cow(pagetable_t old, pagetable_t new, uint64 sz) {
         if((*pte & PTE_V) == 0)
             panic("uvmcopy: page not present");
         pa = PTE2PA(*pte);
-        flags = PTE_FLAGS(*pte) & (~PTE_W); // removing write permission
+        // removing write permission
+        flags = PTE_FLAGS(*pte) & (~PTE_W);
     
         mappages(new, i, PGSIZE, pa, flags);
         uvmunmap(old, i, 1, 0);
@@ -138,7 +135,7 @@ int copy_on_write(struct proc* p, uint64 fault_addr) {
         // Copy contents from the shared page to the new page
         memmove(mem, (char*)pa, PGSIZE);
 
-        // Map the new page in the faulting process's page table with write permissions
+        // Map new page in the faulting process's page table with write perm
         flags = PTE_FLAGS(*pte) | PTE_W;
         uvmunmap(p->pagetable, fault_addr, 1, 0);
         
@@ -147,10 +144,9 @@ int copy_on_write(struct proc* p, uint64 fault_addr) {
             panic("copy_on_write: mappages failed");
         }
         
-        // Add the new page to the shared memory list
+        // Add new page to the shared memory list
         add_shmem(p->cow_group, (uint64)mem);
         
-        // Print debug statement
         print_copy_on_write(p, fault_addr);
         
         return 1;
@@ -158,15 +154,19 @@ int copy_on_write(struct proc* p, uint64 fault_addr) {
     return 0;
 }
 
-void erase_cow_group(int pid){
+
+// Helper functions for clearing a cow_group
+void delete_cow_group(int pid){
 
   for(int i=0; i<NPROC; i++){
+    
     if(cow_group[i].group == pid){
       cow_group[i].count = 0;
       cow_group[i].group = -1;
       
       for(int j=0; j<SHMEM_MAX; j++){
-	cow_group[i].shmem[j] = 0;      
+
+	    cow_group[i].shmem[j] = 0;      
       }
       
       return;

@@ -53,7 +53,7 @@ usertrap(void)
   uint64 scause = r_scause();
   
   if(scause == 0xf || scause == 0xd || scause == 0xc){
-    // Page fault exceptions: 0xf (store page fault), 0xd (load page fault), 0xc (instruction page fault)
+    // Page fault exceptions
     page_fault_handler();
   } else if(scause == 8){
     // system call
