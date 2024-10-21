@@ -65,6 +65,10 @@ int exec(char *path, char **argv) {
     print_ondemand_proc(path); // Print on-demand process info
   }
 
+  cow_init();
+  p->cow_enabled = 0;
+  p->cow_group = -1;
+
   // Load program into memory.
   for(i=0, off=elf.phoff; i<elf.phnum; i++, off+=sizeof(ph)){
     if(readi(ip, 0, (uint64)&ph, off, sizeof(ph)) != sizeof(ph))
