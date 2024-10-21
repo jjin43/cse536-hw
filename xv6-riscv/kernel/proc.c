@@ -347,7 +347,7 @@ fork(int cow_enabled)
   }
 
   if(cow_enabled == 1){
-  printf("print %d", p->sz);
+    printf("print %d", p->sz);
     uvmcopy_cow(p->pagetable, np->pagetable, p->sz);
     
     if(!p->cow_enabled){

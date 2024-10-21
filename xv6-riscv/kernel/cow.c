@@ -99,16 +99,17 @@ int uvmcopy_cow(pagetable_t old, pagetable_t new, uint64 sz) {
 
     // Map pages as Read-Only in both the processes
     for(i = 0; i < sz; i += PGSIZE){
-      if((pte = walk(old, i, 0)) == 0)
+        if((pte = walk(old, i, 0)) == 0)
         panic("uvmcopy: pte should exist");
-      if((*pte & PTE_V) == 0)
+        if((*pte & PTE_V) == 0)
         panic("uvmcopy: page not present");
-      pa = PTE2PA(*pte);
-      flags = PTE_FLAGS(*pte) & (~PTE_W); // removing write permission
-    
-     mappages(new, i, PGSIZE, pa, flags);
-     uvmunmap(old, i, 1, 0);
-     mappages(old, i, PGSIZE, pa, flags);
+        pa = PTE2PA(*pte);
+        flags = PTE_FLAGS(*pte) & (~PTE_W); // removing write permission
+
+        printf("HERE");
+        mappages(new, i, PGSIZE, pa, flags);
+        uvmunmap(old, i, 1, 0);
+        mappages(old, i, PGSIZE, pa, flags);
    }
    return 0;
 }
@@ -126,21 +127,21 @@ int copy_on_write(struct proc* p, uint64 fault_addr) {
     
     // Copy contents from the shared page to the new page
     if(is_shmem(p->cow_group, pa)){
-      char *mem = kalloc();
-      memmove(mem, (char*)pa, PGSIZE);
-      
-      // Map the new page in the faulting process's page table with write permissions
-      flags = PTE_FLAGS(*pte) | PTE_W;
-      uvmunmap(p->pagetable, fault_addr, 1, 0);
-      
-      if(mappages(p->pagetable, fault_addr, PGSIZE, (uint64)pa, flags) != 0){
+        char *mem = kalloc();
+        memmove(mem, (char*)pa, PGSIZE);
+        
+        // Map the new page in the faulting process's page table with write permissions
+        flags = PTE_FLAGS(*pte) | PTE_W;
+        uvmunmap(p->pagetable, fault_addr, 1, 0);
+        printf ("copy_on_write: Mapping new page with write permissions\n");
+        if(mappages(p->pagetable, fault_addr, PGSIZE, (uint64)pa, flags) != 0){
         kfree(mem);
-     }
-     
-     print_copy_on_write(p, fault_addr);
-     
-     kfree(mem);
-     return 1;
+        }
+        
+        print_copy_on_write(p, fault_addr);
+        
+        kfree(mem);
+        return 1;
     }
     return 0;
 }
