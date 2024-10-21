@@ -69,7 +69,7 @@ void add_shmem(int group, uint64 pa) {
 int is_shmem(int group, uint64 pa) {
     if(group == -1)
         return 0;
-
+    printf("entered");
     uint64 *shmem = get_cow_group(group)->shmem;
     for(int i = 0; i < SHMEM_MAX; i++) {
         printf("iteration: %d", shmem[i]);
