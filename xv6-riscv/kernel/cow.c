@@ -132,6 +132,7 @@ void copy_on_write() {
 
     printf("Here1\n");
     // Get the PTE for the faulting address
+    printf("copy_on_write: faulting address: %p\n", va);
     if((pte = walk(p->pagetable, va, 0)) == 0)
         panic("copy_on_write: pte should exist");
     printf("Here2\n");
