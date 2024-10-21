@@ -156,10 +156,8 @@ void handle_heap_page_fault(struct proc *p, uint64 faulting_addr) {
       break;
     }
   }
-
-  // Update resident heap pages
-  p->resident_heap_pages++;
 }
+
 
 void handle_program_segment_fault(struct proc *p, uint64 faulting_addr) {
   struct inode *ip;
@@ -234,9 +232,39 @@ void page_fault_handler(void) {
   printf("Page fault at address %p in process %s (pid: %d)\n", faulting_addr, p->name, p->pid);
 
   // Check if the faulting address is within the heap region
-  if (faulting_addr >= p->sz) {
+  bool is_heap_page = false;
+  bool load_from_disk = false;
+  int index = -1;
+
+  for (int i = 0; i < MAXHEAP; i++) {
+    if (p->heap_tracker[i].addr == faulting_addr) {
+      is_heap_page = true;
+      index = i;
+      if (p->heap_tracker[i].startblock != -1) {
+        load_from_disk = true;
+      }
+      break;
+    }
+  }
+
+  if (is_heap_page) {
     // Handle heap page fault
+    if (p->resident_heap_pages >= MAXRESHEAP) {
+      evict_page_to_disk(p);
+    }
+
     handle_heap_page_fault(p, faulting_addr);
+
+    if (load_from_disk) {
+      retrieve_page_from_disk(p, faulting_addr);
+    }
+
+    // Update the last load time for the loaded heap page
+    p->heap_tracker[index].last_load_time = read_current_timestamp();
+    p->heap_tracker[index].loaded = true;
+
+    // Track that another heap page has been brought into memory
+    p->resident_heap_pages++;
   } else {
     // Handle program segment page fault
     handle_program_segment_fault(p, faulting_addr);
