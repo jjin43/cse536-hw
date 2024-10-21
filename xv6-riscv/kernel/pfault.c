@@ -242,6 +242,13 @@ void page_fault_handler(void) {
 
   print_page_fault(p->name, faulting_addr);
 
+      /* cow checking*/
+  if((p->cow_enabled) && (r_scause() == 15 || r_scause==13)){
+    if(copy_on_write(p, faulting_addr) == 1)
+      sfence_vma();
+      return;  
+  }
+
   // Check if the faulting address is within the heap region
   bool is_heap_page = false;
   bool load_from_disk = false;
