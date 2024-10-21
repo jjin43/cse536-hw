@@ -138,18 +138,18 @@ void copy_on_write() {
     if((*pte & PTE_V) == 0)
         panic("copy_on_write: page not present");
     pa = PTE2PA(*pte);
-
+    printf("Here3\n");
     // Check if the page is shared
     if(!is_shmem(p->cow_group, pa))
         panic("copy_on_write: page not shared");
-
+    printf("Here4\n");
     // Allocate a new page
     if((mem = kalloc()) == 0)
         panic("copy_on_write: kalloc failed");
-
+    printf("Here5\n");
     // Copy contents from the shared page to the new page
     memmove(mem, (char*)pa, PGSIZE);
-    printf("Here3\n");
+    printf("Here6\n");
 
     // Map the new page in the faulting process's page table with write permissions
     *pte = PA2PTE(mem) | PTE_FLAGS(*pte) | PTE_W;
