@@ -29,7 +29,9 @@ struct cow_group* get_cow_group(int group) {
     for(int i = 0; i < NPROC; i++) {
         if(cow_group[i].group == group)
             return &cow_group[i];
+        printf("iterating: %d\n", i);
     }
+    printf("get_cow_group: %d\n", group);
     return 0;
 }
 
