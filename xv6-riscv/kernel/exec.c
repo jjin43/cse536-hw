@@ -58,12 +58,16 @@ int exec(char *path, char **argv) {
     goto bad;
 
   // Determine if the process should be on-demand
-  if (custom_strcmp(path, "/init") == 0 || custom_strcmp(path, "sh") == 0) {
+  if (custom_strcmp(path, "/init") == 0 || custom_strcmp(path, "sh") == 0 || custom_strcmp(path, "test8-cow1") == 0 || custom_strcmp(path, "test9-cow2") == 0 || custom_strcmp(path, "test10-cow3") == 0) {
     p->ondemand = false;
   } else {
     p->ondemand = true;
     print_ondemand_proc(path); // Print on-demand process info
   }
+
+  cow_init();
+  p->cow_enabled = 0;
+  p->cow_group = -1;
 
   // Load program into memory.
   for(i=0, off=elf.phoff; i<elf.phnum; i++, off+=sizeof(ph)){
