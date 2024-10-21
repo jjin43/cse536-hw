@@ -43,6 +43,7 @@ void evict_page_to_disk(struct proc* p) {
   int blockno = -1;
   for (int i = 0; i < PSASIZE; i+=4) {
       if (psa_tracker[i] == false) {
+          psa_tracker[i] = true;
           blockno = i;
           break;
       }
@@ -65,9 +66,9 @@ void evict_page_to_disk(struct proc* p) {
   int victim_idx = -1;
   for (int i = 0; i < MAXHEAP; i++) {
     if (p->heap_tracker[i].loaded == true && victim_idx == -1)
-        victim_idx = i;
+      victim_idx = i;
     else if (p->heap_tracker[i].loaded == true && p->heap_tracker[i].last_load_time < p->heap_tracker[victim_idx].last_load_time)
-        victim_idx = i;
+      victim_idx = i;
     else {}
   }
 
