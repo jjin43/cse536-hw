@@ -158,8 +158,37 @@ freeproc(struct proc *p)
   if(p->trapframe)
     kfree((void*)p->trapframe);
   p->trapframe = 0;
-  if(p->pagetable)
-    proc_freepagetable(p->pagetable, p->sz);
+  
+  
+  if(p->pagetable){
+    if(p->cow_enabled){
+      decr_cow_group_count(p->cow_group);
+      
+      if(get_cow_group_count(p->cow_group)==0){
+        erase_cow_group(p->cow_group);
+        proc_freepagetable(p->pagetable, p->sz);
+      }else{
+        uvmunmap(p->pagetable, TRAMPOLINE, 1, 0);
+        uvmunmap(p->pagetable, TRAPFRAME, 1, 0);
+        
+        pte_t *pte;
+        uint64 pa;
+        
+        for(int i=0; i < p->sz; i = i+PGSIZE){
+          pte = walk(p->pagetable, i, 0);
+          pa = PTE2PA(*pte);
+          
+          if(is_shmem(p->cow_group, pa)){
+            uvmunmap(p->pagetable, i, 1, 0);
+          }else{
+            uvmunmap(p->pagetable, i, 1, 1);
+          }
+        }
+      }
+    }else{
+      proc_freepagetable(p->pagetable, p->sz);
+    }
+  } 
   p->pagetable = 0;
   p->sz = 0;
   p->pid = 0;
@@ -169,8 +198,6 @@ freeproc(struct proc *p)
   p->killed = 0;
   p->xstate = 0;
   p->state = UNUSED;
-  p->cow_enabled = 0;
-  p->cow_group = 0;
 }
 
 // Create a user page table for a given process, with no user memory,

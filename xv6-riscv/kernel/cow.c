@@ -92,73 +92,89 @@ void cow_init() {
 }
 
 int uvmcopy_cow(pagetable_t old, pagetable_t new, uint64 sz) {
-  pte_t *pte;
-  uint64 pa, i;
-  uint flags;
-  char *mem;
+    /* CSE 536: (2.6.1) Handling Copy-on-write fork() */
+    
+    /*
+    following code referred from -  https://github.com/mit-pdos/xv6-riscv/blob/f5b93ef12f7159f74f80f94729ee4faabe42c360/kernel/vm.c#L306
+    */
+    
+    pte_t *pte;
+    uint64 pa, i;
+    uint flags;
+    // Copy user virtual memory from old(parent) to new(child) process
 
-  for(i = 0; i < sz; i += PGSIZE){
-    if((pte = walk(old, i, 0)) == 0)
-      panic("uvmcopy_cow: pte should exist");
-    if((*pte & PTE_V) == 0)
-      panic("uvmcopy_cow: page not present");
-    pa = PTE2PA(*pte);
-    flags = PTE_FLAGS(*pte);
-    flags &= ~PTE_W; // Remove write permission
-    flags |= PTE_R;  // Ensure read permission
-
-    // Map the page as read-only in the child
-    if(mappages(new, i, PGSIZE, pa, flags) != 0){
-      goto err;
+    // Map pages as Read-Only in both the processes
+    for(i = 0; i < sz; i += PGSIZE){
+        if((pte = walk(old, i, 0)) == 0)
+            panic("uvmcopy: pte should exist");
+        if((*pte & PTE_V) == 0)
+            panic("uvmcopy: page not present");
+        pa = PTE2PA(*pte);
+        flags = PTE_FLAGS(*pte) & (~PTE_W); // removing write permission
+    
+        mappages(new, i, PGSIZE, pa, flags);
+        uvmunmap(old, i, 1, 0);
+        mappages(old, i, PGSIZE, pa, flags);
     }
-
-    // Map the page as read-only in the parent
-    *pte = PA2PTE(pa) | flags;
-  }
-  return 0;
-
-err:
-  uvmunmap(new, 0, i / PGSIZE, 1);
-  return -1;
+    return 0;
 }
 
-void copy_on_write() {
+int copy_on_write(struct proc* p, uint64 fault_addr) {
     /* CSE 536: (2.6.2) Handling Copy-on-write */
-    struct proc *p = myproc();
-    uint64 va = r_stval(); // Get the faulting virtual address
+    
     pte_t *pte;
     uint64 pa;
-    char *mem;
-
-    printf("Here1\n");
-    // Get the PTE for the faulting address
-    printf("copy_on_write: faulting address: %p\n", va);
-    if((pte = walk(p->pagetable, va, 0)) == 0)
-        panic("copy_on_write: pte should exist");
-    printf("Here2\n");
-    if((*pte & PTE_V) == 0)
-        panic("copy_on_write: page not present");
+    uint flags;
+    
+    // Allocate a new page 
+    pte = walk(p->pagetable, fault_addr, 0);
+    if (pte == 0 || (*pte & PTE_V) == 0)
+        panic("copy_on_write: pte should exist and be valid");
+    
     pa = PTE2PA(*pte);
-    printf("Here3\n");
+    
     // Check if the page is shared
-    if(!is_shmem(p->cow_group, pa))
-        panic("copy_on_write: page not shared");
-    printf("Here4\n");
-    // Allocate a new page
-    if((mem = kalloc()) == 0)
-        panic("copy_on_write: kalloc failed");
-    printf("Here5\n");
-    // Copy contents from the shared page to the new page
-    memmove(mem, (char*)pa, PGSIZE);
-    printf("Here6\n");
+    if(is_shmem(p->cow_group, pa)){
+        char *mem = kalloc();
+        if (mem == 0)
+            panic("copy_on_write: kalloc failed");
+        
+        // Copy contents from the shared page to the new page
+        memmove(mem, (char*)pa, PGSIZE);
+        
+        // Map the new page in the faulting process's page table with write permissions
+        flags = PTE_FLAGS(*pte) | PTE_W;
+        uvmunmap(p->pagetable, fault_addr, 1, 0);
+        
+        if(mappages(p->pagetable, fault_addr, PGSIZE, (uint64)mem, flags) != 0){
+            kfree(mem);
+            panic("copy_on_write: mappages failed");
+        }
+        
+        // Add the new page to the shared memory list
+        add_shmem(p->cow_group, (uint64)mem);
+        
+        // Print debug statement
+        print_copy_on_write(p, fault_addr);
+        
+        return 1;
+    }
+    return 0;
+}
 
-    // Map the new page in the faulting process's page table with write permissions
-    *pte = PA2PTE(mem) | PTE_FLAGS(*pte) | PTE_W;
-    *pte &= ~PTE_R; // Remove read-only flag
+void erase_cow_group(int pid){
 
-    // Add the new page to the shared memory list
-    add_shmem(p->cow_group, (uint64)mem);
+  for(int i=0; i<NPROC; i++){
+    if(cow_group[i].group == pid){
+      cow_group[i].count = 0;
+      cow_group[i].group = -1;
+      
+      for(int j=0; j<SHMEM_MAX; j++){
+	cow_group[i].shmem[j] = 0;      
+      }
+      
+      return;
+    }
+  }
 
-    // Print debug statement
-    print_copy_on_write(p, va);
 }
