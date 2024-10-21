@@ -52,15 +52,25 @@ void evict_page_to_disk(struct proc* p) {
     panic("evict_page_to_disk: no free PSA blocks");
   }
 
-  // Find a victim page using the Working Set algorithm
+  // // Find a victim page using the Working Set algorithm
+  // int victim_idx = -1;
+  // for (int i = 0; i < MAXHEAP; i++) {
+  //   if (current_time - p->heap_tracker[i].last_access_time > working_set_window) {
+  //     victim_idx = i;
+  //     break;
+  //   }
+  // }
+
+  /* Find victim page using FIFO. */
   int victim_idx = -1;
   for (int i = 0; i < MAXHEAP; i++) {
-    if (current_time - p->heap_tracker[i].last_access_time > working_set_window) {
-      victim_idx = i;
-      break;
-    }
+      if (p->heap_tracker[i].loaded == true && victim_idx == -1)
+          victim_idx = i;
+      else if (p->heap_tracker[i].loaded == true && p->heap_tracker[i].last_load_time < p->heap_tracker[victim_idx].last_load_time)
+          victim_idx = i;
+      else {}
   }
-  
+
   if (victim_idx == -1) {
     panic("evict_page_to_disk: no victim page found");
   }
