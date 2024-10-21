@@ -117,10 +117,6 @@ err:
     return -1;
 }
 
-void print_copy_on_write(struct proc *p, uint64 va) {
-    printf("COW: Proc (%s) PID (%d) Addr (%p)\n", p->name, p->pid, va);
-}
-
 void copy_on_write() {
     struct proc *p = myproc();
     uint64 va = r_stval(); // Faulting virtual address
