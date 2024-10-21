@@ -95,23 +95,39 @@ int uvmcopy_cow(pagetable_t old, pagetable_t new, uint64 sz) {
     pte_t *pte;
     uint64 pa, i;
     uint flags;
-    // Copy user vitual memory from old(parent) to new(child) process
 
-    // Map pages as Read-Only in both the processes
-    for(i = 0; i < sz; i += PGSIZE){
-        if((pte = walk(old, i, 0)) == 0)
-        panic("uvmcopy: pte should exist");
-        if((*pte & PTE_V) == 0)
-        panic("uvmcopy: page not present");
+    for (i = 0; i < sz; i += PGSIZE) {
+        if ((pte = walk(old, i, 0)) == 0)
+            panic("uvmcopy_cow: pte should exist");
+        if ((*pte & PTE_V) == 0)
+            panic("uvmcopy_cow: page not present");
+
         pa = PTE2PA(*pte);
-        flags = PTE_FLAGS(*pte) & (~PTE_W); // removing write permission
+        flags = PTE_FLAGS(*pte);
 
-        printf("HERE");
-        mappages(new, i, PGSIZE, pa, flags);
-        uvmunmap(old, i, 1, 0);
-        mappages(old, i, PGSIZE, pa, flags);
-   }
-   return 0;
+        // Remove write permission and set read-only permission
+        flags &= ~PTE_W;
+        flags |= PTE_R;
+
+        // Check if the address is already mapped
+        if (walk(new, i, 0) != 0) {
+            panic("uvmcopy_cow: address already mapped");
+        }
+
+        // Map the page in the child process's page table
+        if (mappages(new, i, PGSIZE, pa, flags) != 0) {
+            goto err;
+        }
+
+        // Update the parent process's PTE to be read-only
+        *pte &= ~PTE_W;
+        *pte |= PTE_R;
+    }
+    return 0;
+
+err:
+    uvmunmap(new, 0, i / PGSIZE, 1);
+    return -1;
 }
 
 int copy_on_write(struct proc* p, uint64 fault_addr) {
@@ -133,7 +149,6 @@ int copy_on_write(struct proc* p, uint64 fault_addr) {
         // Map the new page in the faulting process's page table with write permissions
         flags = PTE_FLAGS(*pte) | PTE_W;
         uvmunmap(p->pagetable, fault_addr, 1, 0);
-        printf ("copy_on_write: Mapping new page with write permissions\n");
         if(mappages(p->pagetable, fault_addr, PGSIZE, (uint64)pa, flags) != 0){
         kfree(mem);
         }
