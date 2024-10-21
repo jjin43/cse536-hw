@@ -290,6 +290,7 @@ growproc(int n)
       track_heap(p, sz, n / PGSIZE);
       print_skip_heap_region(p->name, sz, n / PGSIZE);
       p->sz = sz + n;
+      return 0;
     } else {
       if((sz = uvmalloc(p->pagetable, sz, sz + n, PTE_W | PTE_X | PTE_R | PTE_U)) == 0)
         return -1;
@@ -304,52 +305,52 @@ growproc(int n)
 
 // Create a new process, copying the parent.
 // Sets up child kernel stack to return as if from fork() system call.
-int fork(int cow_enabled) {
+int
+fork(int cow_enabled)
+{
   int i, pid;
   struct proc *np;
   struct proc *p = myproc();
 
   // Allocate process.
   if((np = allocproc()) == 0){
-      return -1;
+    return -1;
   }
+
+  /* CSE 536: (3.1) Modify fork() to handle CoW */
+  
+  // Currently fork() does not handle the case for when CoW is enable
+  // You will have to implement the same
+
+  // Set the appropriate metadata to track a CoW group
+
+  // implement and call the uvm_copy() function defined in cow.c
 
   // Copy user memory from parent to child.
-  if(cow_enabled) {
-      if(uvmcopy_cow(p->pagetable, np->pagetable, p->sz) < 0){
-          freeproc(np);
-          release(&np->lock);
-          return -1;
-      }
-      np->cow_enabled = 1;
-      np->cow_group = p->pid;
-      incr_cow_group_count(p->pid);
-  } else {
-      if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
-          freeproc(np);
-          release(&np->lock);
-          return -1;
-      }
-      np->cow_enabled = 0;
-      np->cow_group = -1;
+  if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
+    freeproc(np);
+    release(&np->lock);
+    return -1;
   }
-
   np->sz = p->sz;
 
-  // Copy saved user registers.
+  // copy saved user registers.
   *(np->trapframe) = *(p->trapframe);
 
   // Cause fork to return 0 in the child.
   np->trapframe->a0 = 0;
 
-  // Increment reference counts on open file descriptors.
+  // increment reference counts on open file descriptors.
   for(i = 0; i < NOFILE; i++)
-      if(p->ofile[i])
-          np->ofile[i] = filedup(p->ofile[i]);
+    if(p->ofile[i])
+      np->ofile[i] = filedup(p->ofile[i]);
   np->cwd = idup(p->cwd);
 
   safestrcpy(np->name, p->name, sizeof(p->name));
 
+  /* CSE 536: Copy the on-demand bit too. This is needed since
+   * sh is always forked on any command, and it is reexecuted
+   * from its forked counterpart. */
   np->ondemand = p->ondemand;
 
   pid = np->pid;
