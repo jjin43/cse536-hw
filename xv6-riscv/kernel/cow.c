@@ -162,6 +162,7 @@ int copy_on_write(struct proc* p, uint64 fault_addr) {
         
         return 1;
     }
+    printf("CP-5\n");
     return 0;
 }
 
