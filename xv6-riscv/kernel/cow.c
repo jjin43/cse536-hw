@@ -97,7 +97,6 @@ int uvmcopy_cow(pagetable_t old, pagetable_t new, uint64 sz) {
     /*
     following code referred from -  https://github.com/mit-pdos/xv6-riscv/blob/f5b93ef12f7159f74f80f94729ee4faabe42c360/kernel/vm.c#L306
     */
-    printf("COW-1\n");
     pte_t *pte;
     uint64 pa, i;
     uint flags;
