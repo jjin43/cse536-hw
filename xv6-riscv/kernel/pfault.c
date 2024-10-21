@@ -35,8 +35,8 @@ void init_psa_regions(void)
 
 /* Evict heap page to disk when resident pages exceed limit */
 void evict_page_to_disk(struct proc* p) {
-  // Define the working set time window (e.g., 100 ticks)
-  uint64 working_set_window = 100;
+  // Define the working set time window (100 ticks)
+  uint64 working_set_window = 30;
   uint64 current_time = read_current_timestamp();
 
   // Find free PSA blocks
@@ -53,16 +53,7 @@ void evict_page_to_disk(struct proc* p) {
     panic("evict_page_to_disk: no free PSA blocks");
   }
 
-  // // Find a victim page using the Working Set algorithm
-  // int victim_idx = -1;
-  // for (int i = 0; i < MAXHEAP; i++) {
-  //   if (current_time - p->heap_tracker[i].last_access_time > working_set_window) {
-  //     victim_idx = i;
-  //     break;
-  //   }
-  // }
-
-  /* Find victim page using FIFO. */
+  // Find victim page using FIFO
   int victim_idx = -1;
   for (int i = 0; i < MAXHEAP; i++) {
     if (p->heap_tracker[i].loaded == true && victim_idx == -1)
@@ -114,6 +105,8 @@ void retrieve_page_from_disk(struct proc* p, uint64 uvaddr) {
   for (int i = 0; i < MAXHEAP; i++) {
     if (p->heap_tracker[i].addr == uvaddr) {
       blockno = p->heap_tracker[i].startblock;
+      p->heap_tracker[i].loaded = true;
+      p->heap_tracker[i].last_load_time = read_current_timestamp();
       break;
     }
   }
@@ -163,7 +156,6 @@ void handle_heap_page_fault(struct proc *p, uint64 faulting_addr) {
     if (p->heap_tracker[i].addr == faulting_addr) {
       uint64 current_time = read_current_timestamp();
       p->heap_tracker[i].last_load_time = current_time;
-      p->heap_tracker[i].last_access_time = current_time;
       p->heap_tracker[i].loaded = true;
       break;
     }
@@ -241,6 +233,7 @@ void page_fault_handler(void) {
   uint64 faulting_addr = r_stval() & (~(0xFFF));
 
   print_page_fault(p->name, faulting_addr);
+  printf("Page fault at address %p in process %s (pid: %d)\n", faulting_addr, p->name, p->pid);
 
   // Check if the faulting address is within the heap region
   bool is_heap_page = false;

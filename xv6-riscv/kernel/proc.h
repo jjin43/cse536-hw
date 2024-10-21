@@ -90,7 +90,6 @@ struct heap_tracker_t {
   uint64 last_load_time;        // when the page was loaded into memory
   bool   loaded;                // has the heap page been loaded yet
   int    startblock;            // if located in disk, the starting block
-  uint64 last_access_time;      // when the page was last accessed
 };
 
 // Per-process state
