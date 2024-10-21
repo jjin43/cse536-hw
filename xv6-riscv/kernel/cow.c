@@ -132,19 +132,22 @@ int copy_on_write(struct proc* p, uint64 fault_addr) {
         panic("copy_on_write: pte should exist and be valid");
     
     pa = PTE2PA(*pte);
-    
+    printf("CP-1\n");
     // Check if the page is shared
     if(is_shmem(p->cow_group, pa)){
         char *mem = kalloc();
         if (mem == 0)
             panic("copy_on_write: kalloc failed");
-        
+        printf("CP-2\n");
+
         // Copy contents from the shared page to the new page
         memmove(mem, (char*)pa, PGSIZE);
-        
+        printf("CP-3\n");
+
         // Map the new page in the faulting process's page table with write permissions
         flags = PTE_FLAGS(*pte) | PTE_W;
         uvmunmap(p->pagetable, fault_addr, 1, 0);
+        printf("CP-4\n");
         
         if(mappages(p->pagetable, fault_addr, PGSIZE, (uint64)mem, flags) != 0){
             kfree(mem);
