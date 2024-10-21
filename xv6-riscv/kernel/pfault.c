@@ -41,13 +41,13 @@ void evict_page_to_disk(struct proc* p) {
 
   // Find free PSA blocks
   int blockno = -1;
-  for (int i = 0; i < PSASIZE; i += 4) {
-    if (!psa_tracker[i] && !psa_tracker[i+1] && !psa_tracker[i+2] && !psa_tracker[i+3]) {
-      blockno = i;
-      psa_tracker[i] = psa_tracker[i+1] = psa_tracker[i+2] = psa_tracker[i+3] = true;
-      break;
-    }
+  for (int i = 0; i < PSASIZE; i+=4) {
+      if (psa_tracker[i] == false) {
+          blockno = i;
+          break;
+      }
   }
+  
   if (blockno == -1) {
     panic("evict_page_to_disk: no free PSA blocks");
   }
@@ -60,6 +60,7 @@ void evict_page_to_disk(struct proc* p) {
       break;
     }
   }
+  
   if (victim_idx == -1) {
     panic("evict_page_to_disk: no victim page found");
   }
