@@ -304,52 +304,52 @@ growproc(int n)
 
 // Create a new process, copying the parent.
 // Sets up child kernel stack to return as if from fork() system call.
-int
-fork(int cow_enabled)
-{
+int fork(int cow_enabled) {
   int i, pid;
   struct proc *np;
   struct proc *p = myproc();
 
   // Allocate process.
   if((np = allocproc()) == 0){
-    return -1;
+      return -1;
   }
-
-  /* CSE 536: (3.1) Modify fork() to handle CoW */
-  
-  // Currently fork() does not handle the case for when CoW is enable
-  // You will have to implement the same
-
-  // Set the appropriate metadata to track a CoW group
-
-  // implement and call the uvm_copy() function defined in cow.c
 
   // Copy user memory from parent to child.
-  if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
-    freeproc(np);
-    release(&np->lock);
-    return -1;
+  if(cow_enabled) {
+      if(uvmcopy_cow(p->pagetable, np->pagetable, p->sz) < 0){
+          freeproc(np);
+          release(&np->lock);
+          return -1;
+      }
+      np->cow_enabled = 1;
+      np->cow_group = p->pid;
+      incr_cow_group_count(p->pid);
+  } else {
+      if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
+          freeproc(np);
+          release(&np->lock);
+          return -1;
+      }
+      np->cow_enabled = 0;
+      np->cow_group = -1;
   }
+
   np->sz = p->sz;
 
-  // copy saved user registers.
+  // Copy saved user registers.
   *(np->trapframe) = *(p->trapframe);
 
   // Cause fork to return 0 in the child.
   np->trapframe->a0 = 0;
 
-  // increment reference counts on open file descriptors.
+  // Increment reference counts on open file descriptors.
   for(i = 0; i < NOFILE; i++)
-    if(p->ofile[i])
-      np->ofile[i] = filedup(p->ofile[i]);
+      if(p->ofile[i])
+          np->ofile[i] = filedup(p->ofile[i]);
   np->cwd = idup(p->cwd);
 
   safestrcpy(np->name, p->name, sizeof(p->name));
 
-  /* CSE 536: Copy the on-demand bit too. This is needed since
-   * sh is always forked on any command, and it is reexecuted
-   * from its forked counterpart. */
   np->ondemand = p->ondemand;
 
   pid = np->pid;
