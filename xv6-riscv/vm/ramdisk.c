@@ -7,31 +7,14 @@
 #include "defs.h"
 #include "param.h"
 #include "memlayout.h"
-#include "spinlock.h"
-#include "sleeplock.h"
-#include "fs.h"
 #include "buf.h"
-
-/* TODO: find the location of the QEMU ramdisk. */
-#define RAMDISK 0x84000000
-
-void
-ramdiskinit(void)
-{
-}
 
 // If B_DIRTY is set, write buf to disk, clear B_DIRTY, set B_VALID.
 // Else if B_VALID is not set, read buf from disk, set B_VALID.
 void
 ramdiskrw(struct buf *b)
 {
-#if 0
-  if(!holdingsleep(&b->lock))
-    panic("ramdiskrw: buf not locked");
-  if((b->flags & (B_VALID|B_DIRTY)) == B_VALID)
-    panic("ramdiskrw: nothing to do");
-#endif
-
+  /* Ramdisk is not even reading from the damn file.. */
   if(b->blockno >= FSSIZE)
     panic("ramdiskrw: blockno too big");
 
@@ -41,16 +24,4 @@ ramdiskrw(struct buf *b)
   // read from the location
   memmove(b->data, addr, BSIZE);
   b->valid = 1;
-
-#if 0
-  if(b->flags & B_DIRTY){
-    // write
-    memmove(addr, b->data, BSIZE);
-    b->flags &= ~B_DIRTY;
-  } else {
-    // read
-    memmove(b->data, addr, BSIZE);
-    b->flags |= B_VALID;
-  }
-#endif
 }

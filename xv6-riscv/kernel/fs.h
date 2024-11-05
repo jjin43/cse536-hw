@@ -20,9 +20,6 @@ struct superblock {
   uint logstart;     // Block number of first log block
   uint inodestart;   // Block number of first inode block
   uint bmapstart;    // Block number of first free map block
-
-  uint nswap;        /* Adil: Number of swap blocks */
-  uint swapstart;    /* Adil: Block number of first swap block */
 };
 
 #define FSMAGIC 0x10203040

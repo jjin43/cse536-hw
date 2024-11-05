@@ -46,15 +46,12 @@ usertrap(void)
   w_stvec((uint64)kernelvec);
 
   struct proc *p = myproc();
-
-  /* CSE 536: (2.2) Intercept page faults and redirect them to the fault handler. */
-
+  
   // save user program counter.
   p->trapframe->epc = r_sepc();
-  
+
   if(r_scause() == 8){
     // system call
-
     if(killed(p))
       exit(-1);
 
@@ -153,11 +150,8 @@ kerneltrap()
   }
 
   // give up the CPU if this is a timer interrupt.
-  if(which_dev == 2 && myproc() != 0 && myproc()->state == RUNNING) {
-    /* Adil: debugging */
-    // printf("Yielding CPU.\n");
+  if(which_dev == 2 && myproc() != 0 && myproc()->state == RUNNING)
     yield();
-  }
 
   // the yield() may have caused some traps to occur,
   // so restore trap registers for use by kernelvec.S's sepc instruction.

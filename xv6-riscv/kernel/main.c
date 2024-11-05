@@ -29,6 +29,10 @@ main()
     fileinit();      // file table
     virtio_disk_init(); // emulated hard disk
     userinit();      // first user process
+
+    // Initialize trap and emulate
+    trap_and_emulate_init();
+
     __sync_synchronize();
     started = 1;
   } else {
@@ -43,3 +47,4 @@ main()
 
   scheduler();        
 }
+

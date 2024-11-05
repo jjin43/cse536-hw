@@ -6,10 +6,6 @@
 #include "defs.h"
 #include "fs.h"
 
-/* Adil */
-#include "spinlock.h"
-#include "proc.h"
-
 /*
  * the kernel's page table.
  */
@@ -184,9 +180,7 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
     if((pte = walk(pagetable, a, 0)) == 0)
       panic("uvmunmap: walk");
     if((*pte & PTE_V) == 0)
-      continue;
-      /* CSE 536: removed for on-demand allocation. */
-      // panic("uvmunmap: not mapped");
+      panic("uvmunmap: not mapped");
     if(PTE_FLAGS(*pte) == PTE_V)
       panic("uvmunmap: not a leaf");
     if(do_free){
@@ -236,8 +230,8 @@ uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz, int xperm)
 
   if(newsz < oldsz)
     return oldsz;
-  oldsz = PGROUNDUP(oldsz);
 
+  oldsz = PGROUNDUP(oldsz);
   for(a = oldsz; a < newsz; a += PGSIZE){
     mem = kalloc();
     if(mem == 0){
@@ -351,19 +345,6 @@ uvmclear(pagetable_t pagetable, uint64 va)
   *pte &= ~PTE_U;
 }
 
-// CSE 536: mark a PTE invalid. For swapping 
-// pages in and out of memory.
-void
-uvminvalid(pagetable_t pagetable, uint64 va)
-{
-  pte_t *pte;
-  
-  pte = walk(pagetable, va, 0);
-  if(pte == 0)
-    panic("uvminvalid");
-  *pte &= ~PTE_V;
-}
-
 // Copy from kernel to user.
 // Copy len bytes from src to virtual address dstva in a given page table.
 // Return 0 on success, -1 on error.
@@ -375,9 +356,8 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
   while(len > 0){
     va0 = PGROUNDDOWN(dstva);
     pa0 = walkaddr(pagetable, va0);
-    if (pa0 == 0){
+    if(pa0 == 0)
       return -1;
-    }
     n = PGSIZE - (dstva - va0);
     if(n > len)
       n = len;

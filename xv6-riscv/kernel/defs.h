@@ -1,3 +1,5 @@
+#include <stddef.h>
+
 struct buf;
 struct context;
 struct file;
@@ -173,7 +175,6 @@ uint64          walkaddr(pagetable_t, uint64);
 int             copyout(pagetable_t, uint64, char *, uint64);
 int             copyin(pagetable_t, char *, uint64, uint64);
 int             copyinstr(pagetable_t, char *, uint64, uint64);
-void            uvminvalid(pagetable_t pagetable, uint64 va); // CSE 536
 
 // plic.c
 void            plicinit(void);
@@ -186,20 +187,14 @@ void            virtio_disk_init(void);
 void            virtio_disk_rw(struct buf *, int);
 void            virtio_disk_intr(void);
 
-// CSE 536: pfault.c
-extern uint64   non_fault_addr;
-void            page_fault_handler(void);
-void            proc_pswap_diskblocks_init(void);
+// debug.c
+void            dump_hex(const void* data, size_t size);
 
-// CSE 536: debug.h
-void print_static_proc(char* name);
-void print_ondemand_proc(char* name);
-void print_skip_section(char* name, uint64 vaddr, int size);
-void print_page_fault(char* name, uint64 vaddr);
-void print_load_seg(uint64 vaddr, uint64 seg, int size);
-void print_skip_heap_region(char* name, uint64 vaddr, int npages);
-void print_evict_page(uint64 vaddr, int startblock);
-void print_retrieve_page(uint64 vaddr, int startblock);
+// trap-and-emulate.c
+void            trap_and_emulate(void);
+void            trap_and_emulate_ecall(void);
+void            trap_and_emulate_init(void);
+
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))

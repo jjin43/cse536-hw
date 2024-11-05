@@ -484,6 +484,12 @@ readi(struct inode *ip, int user_dst, uint64 dst, uint off, uint n)
     if(addr == 0)
       break;
     bp = bread(ip->dev, addr);
+
+#if 0
+    // Adil: Remove later
+    printf("ip->dev; %d\n", ip->dev);
+#endif
+
     m = min(n - tot, BSIZE - off%BSIZE);
     if(either_copyout(user_dst, dst, bp->data + (off % BSIZE), m) == -1) {
       brelse(bp);

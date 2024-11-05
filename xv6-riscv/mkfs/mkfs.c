@@ -23,9 +23,8 @@
 int nbitmap = FSSIZE/(BSIZE*8) + 1;
 int ninodeblocks = NINODES / IPB + 1;
 int nlog = LOGSIZE;
-int nswap = PSASIZE; // CSE 536: Allocating blocks in fs.img for the PSA
-int nmeta;           // Number of meta blocks (boot, sb, nlog, inode, bitmap)
-int nblocks;         // Number of data blocks
+int nmeta;    // Number of meta blocks (boot, sb, nlog, inode, bitmap)
+int nblocks;  // Number of data blocks
 
 int fsfd;
 struct superblock sb;
@@ -91,8 +90,7 @@ main(int argc, char *argv[])
     die(argv[1]);
 
   // 1 fs block = 1 disk sector
-  // nmeta = 2 + nlog + ninodeblocks + nbitmap;
-  nmeta = 2 + nlog + nswap + ninodeblocks + nbitmap;
+  nmeta = 2 + nlog + ninodeblocks + nbitmap;
   nblocks = FSSIZE - nmeta;
 
   sb.magic = FSMAGIC;
@@ -100,16 +98,12 @@ main(int argc, char *argv[])
   sb.nblocks = xint(nblocks);
   sb.ninodes = xint(NINODES);
   sb.nlog = xint(nlog);
-  sb.logstart     = xint(2);
-  sb.nswap        = xint(nswap);                 // Adil
-  sb.swapstart    = xint(2+nlog);                // Adil
-  sb.inodestart   = xint(2+nlog+nswap);            // Adil
-  sb.bmapstart    = xint(2+nlog+nswap+ninodeblocks);
+  sb.logstart = xint(2);
+  sb.inodestart = xint(2+nlog);
+  sb.bmapstart = xint(2+nlog+ninodeblocks);
 
-  printf("nmeta %d (boot, super, log blocks %u swap blocks %u inode blocks %u, bitmap blocks %u) blocks %d total %d\n",
-         nmeta, nlog, nswap, ninodeblocks, nbitmap, nblocks, FSSIZE);
-  
-  printf("CSE 536: Swap disk blocks (%u-%u)\n", sb.swapstart, sb.swapstart+sb.nswap);
+  printf("nmeta %d (boot, super, log blocks %u inode blocks %u, bitmap blocks %u) blocks %d total %d\n",
+         nmeta, nlog, ninodeblocks, nbitmap, nblocks, FSSIZE);
 
   freeblock = nmeta;     // the first free block that we can allocate
 

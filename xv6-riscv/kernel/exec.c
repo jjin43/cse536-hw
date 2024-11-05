@@ -7,8 +7,7 @@
 #include "defs.h"
 #include "elf.h"
 
-// static 
-int loadseg(pde_t *, uint64, struct inode *, uint, uint);
+static int loadseg(pde_t *, uint64, struct inode *, uint, uint);
 
 int flags2perm(int flags)
 {
@@ -62,7 +61,6 @@ exec(char *path, char **argv)
       goto bad;
     if(ph.vaddr % PGSIZE != 0)
       goto bad;
-
     uint64 sz1;
     if((sz1 = uvmalloc(pagetable, sz, ph.vaddr + ph.memsz, flags2perm(ph.flags))) == 0)
       goto bad;
@@ -130,6 +128,16 @@ exec(char *path, char **argv)
   p->trapframe->sp = sp; // initial stack pointer
   proc_freepagetable(oldpagetable, oldsz);
 
+  // CSE 536: Allocate 4MB of memory for the VM starting from memaddr.
+  if (strncmp(p->name, "vm-", 3) == 0) {
+    uint64 memaddr = 0x80000000;
+    if((sz1 = uvmalloc(pagetable, memaddr, memaddr + 1024*PGSIZE, PTE_W)) == 0) {
+      printf("Error: could not allocate memory at 0x80000000 for VM.\n");
+      goto bad;
+    }
+    printf("Created a VM process and allocated memory region (%p - %p).\n", memaddr, memaddr + 1024*PGSIZE);
+  }
+
   return argc; // this ends up in a0, the first argument to main(argc, argv)
 
  bad:
@@ -142,12 +150,11 @@ exec(char *path, char **argv)
   return -1;
 }
 
-
 // Load a program segment into pagetable at virtual address va.
 // va must be page-aligned
 // and the pages from va to va+sz must already be mapped.
 // Returns 0 on success, -1 on failure.
-int
+static int
 loadseg(pagetable_t pagetable, uint64 va, struct inode *ip, uint offset, uint sz)
 {
   uint i, n;

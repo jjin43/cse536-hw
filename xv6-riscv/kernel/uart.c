@@ -113,10 +113,10 @@ uartputc_sync(int c)
 {
   push_off();
 
-  if(panicked){
-    for(;;)
-      ;
-  }
+  // if(panicked){
+  //   for(;;)
+  //     ;
+  // }
 
   // wait for Transmit Holding Empty to be set in LSR.
   while((ReadReg(LSR) & LSR_TX_IDLE) == 0)

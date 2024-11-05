@@ -155,6 +155,13 @@ found:
 static void
 freeproc(struct proc *p)
 {
+  if (strncmp(p->name, "vm-", 3) == 0) {
+    // CSE 536: Also unmap the VM memory region
+    uint64 memaddr_start = 0x80000000;
+    uint64 memaddr_count = 1024;
+    uvmunmap(p->pagetable, memaddr_start, memaddr_count, 0);
+  }
+
   if(p->trapframe)
     kfree((void*)p->trapframe);
   p->trapframe = 0;
@@ -261,9 +268,6 @@ growproc(int n)
 {
   uint64 sz;
   struct proc *p = myproc();
-
-  /* CSE 536: For simplicity, I've made all allocations at page-level. */
-  n = PGROUNDUP(n);
 
   sz = p->sz;
   if(n > 0){
@@ -553,9 +557,6 @@ sleep(void *chan, struct spinlock *lk)
   // Go to sleep.
   p->chan = chan;
   p->state = SLEEPING;
-
-  /* Adil: sleeping. */
-  // printf("Sleeping and yielding CPU.");
 
   sched();
 

@@ -4,11 +4,17 @@
 #include "riscv.h"
 #include "defs.h"
 
+/* Adil */
+#include "spinlock.h"
+#include "sleeplock.h"
+#include "fs.h"
+#include "buf.h"
+
 void main();
 void timerinit();
 
 // entry.S needs one stack per CPU.
-__attribute__ ((aligned (16))) char stack0[4096 * NCPU];
+__attribute__ ((aligned (16))) char stack0[STSIZE * NCPU];
 
 // a scratch area per CPU for machine-mode timer interrupts.
 uint64 timer_scratch[NCPU][5];
@@ -20,6 +26,10 @@ extern void timervec();
 void
 start()
 {
+  // keep each CPU's hartid in its tp register, for cpuid().
+  int id = r_mhartid();
+  w_tp(id);
+
   // set M Previous Privilege mode to Supervisor, for mret.
   unsigned long x = r_mstatus();
   x &= ~MSTATUS_MPP_MASK;
@@ -33,11 +43,6 @@ start()
   // disable paging for now.
   w_satp(0);
 
-  // delegate all interrupts and exceptions to supervisor mode.
-  w_medeleg(0xffff);
-  w_mideleg(0xffff);
-  w_sie(r_sie() | SIE_SEIE | SIE_STIE | SIE_SSIE);
-
   // configure Physical Memory Protection to give supervisor mode
   // access to all of physical memory.
   w_pmpaddr0(0x3fffffffffffffull);
@@ -46,9 +51,45 @@ start()
   // ask for clock interrupts.
   timerinit();
 
-  // keep each CPU's hartid in its tp register, for cpuid().
-  int id = r_mhartid();
-  w_tp(id);
+#if 0
+  // Adil: enable printf
+  if (id == 0) {
+    consoleinit();
+    printfinit();
+
+    // Adil: testing reading from the ramdisk
+    uint64 ramdisk_size = 273176;
+    int total_blocks = (ramdisk_size/BSIZE) + 1;
+
+    /* First 4096 bytes are ELF headers */
+    uint64 kern_load_addr = RAMDISKBASE - 0x1000;
+    for (int i = 0; i < total_blocks; i++) {
+      struct buf b;
+      b.blockno = i;
+      b.valid = 0;
+      ramdiskrw(&b);
+      memmove((void*) kern_load_addr, (void*) &(b.data), BSIZE);
+      
+      if (kern_load_addr == RAMDISKBASE)
+        dump_hex((void*) kern_load_addr, BSIZE);
+
+      kern_load_addr+=BSIZE;
+    }
+
+    // w_mepc((uint64)0x8100001a);
+
+    // Directly jumping to main works too.
+    // w_mepc((uint64)0x81000fb0);
+
+    printf("\n");
+    printf("bootloader code is executing\n");
+  }
+#endif
+
+  // delegate all interrupts and exceptions to supervisor mode.
+  w_medeleg(0xffff);
+  w_mideleg(0xffff);
+  w_sie(r_sie() | SIE_SEIE | SIE_STIE | SIE_SSIE);
 
   // switch to supervisor mode and jump to main().
   asm volatile("mret");

@@ -1,5 +1,30 @@
 #ifndef __ASSEMBLER__
 
+/* Adil */
+static inline uint64
+r_mvendorid()
+{
+ uint64 x;
+ asm volatile("csrr %0, mvendorid" : "=r" (x) );
+ return x;
+}
+ 
+static inline uint64
+r_marchid()
+{
+ uint64 x;
+ asm volatile("csrr %0, marchid" : "=r" (x) );
+ return x;
+}
+ 
+static inline uint64
+r_mimpid()
+{
+ uint64 x;
+ asm volatile("csrr %0, mimpid" : "=r" (x) );
+ return x;
+}
+
 // which hart (core) is this?
 static inline uint64
 r_mhartid()

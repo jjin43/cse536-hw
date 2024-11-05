@@ -59,17 +59,46 @@ printptr(uint64 x)
     consputc(digits[x >> (sizeof(uint64) * 8 - 4)]);
 }
 
+/* Adil: printing hex in 4 characters. */
+static void
+print4hex(int xx, int base, int sign)
+{
+  char buf[4];
+  int i;
+  uint x;
+
+  if(sign && (sign = xx < 0))
+    x = -xx;
+  else
+    x = xx;
+
+  i = 0;
+  do {
+    buf[i++] = digits[x % base];
+  } while((x /= base) != 0);
+
+  if(sign)
+    buf[i++] = '-';
+
+  for (int p=4-i; p>=0; p--)
+    consputc('0');
+
+  while(--i >= 0)
+    consputc(buf[i]);
+}
+
 // Print to the console. only understands %d, %x, %p, %s.
 void
 printf(char *fmt, ...)
 {
   va_list ap;
-  int i, c, locking;
+  // int i, c, locking;
+  int i, c;
   char *s;
 
-  locking = pr.locking;
-  if(locking)
-    acquire(&pr.lock);
+  // locking = pr.locking;
+  // if(locking)
+  //   acquire(&pr.lock);
 
   if (fmt == 0)
     panic("null fmt");
@@ -87,6 +116,8 @@ printf(char *fmt, ...)
     case 'd':
       printint(va_arg(ap, int), 10, 1);
       break;
+    case '4':
+      print4hex(va_arg(ap, int), 16, 1);
     case 'x':
       printint(va_arg(ap, int), 16, 1);
       break;
@@ -111,8 +142,8 @@ printf(char *fmt, ...)
   }
   va_end(ap);
 
-  if(locking)
-    release(&pr.lock);
+  // if(locking)
+  //   release(&pr.lock);
 }
 
 void
