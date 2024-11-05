@@ -9,6 +9,10 @@
 #include <stdbool.h>
 #include <stddef.h> 
 
+enum ulthread_scheduling_algorithm curr_algo;
+int curr_tid = 0;
+struct ulthread* curr_thread;
+
 /* Get thread ID */
 int get_current_tid(void) {
     return 0;

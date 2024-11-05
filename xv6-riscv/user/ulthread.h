@@ -17,4 +17,41 @@ enum ulthread_scheduling_algorithm {
   FCFS,         // first-come-first serve
 };
 
+// Thread context
+struct ulthread_context {
+  uint64 ra;
+  uint64 sp;
+
+  // argument registers to pass
+  uint64 a0;
+  uint64 a1;
+  uint64 a2;
+  uint64 a3;
+  uint64 a4;
+  uint64 a5;
+
+  // save caller registers
+  uint64 s0;
+  uint64 s1;
+  uint64 s2;
+  uint64 s3;
+  uint64 s4;
+  uint64 s5;
+  uint64 s6;
+  uint64 s7;
+  uint64 s8;
+  uint64 s9;
+  uint64 s10;
+  uint64 s11;
+};
+
+// Thread structure
+struct ulthread {
+  int tid;
+  enum ulthread_state state;
+  int priority;
+  struct ulthread_context context;
+  uint64 access_time;
+};
+
 #endif
