@@ -193,6 +193,8 @@ void ulthread_schedule(void) {
         // printf("[schedule DEBUG] curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
         
         ulthread_context_switch(&(all_thread[0].context), &(all_thread[next_index].context));
+
+        printf("[DEBUG] num_threads: %d\n", num_threads);
     }
 }
 
