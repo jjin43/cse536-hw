@@ -153,7 +153,7 @@ bool ulthread_create(uint64 start, uint64 stack, uint64 args[], int priority) {
 /* Thread scheduler */
 void ulthread_schedule(void) {
 
-    while (num_threads > 1)
+    while (1)
     {
         int next_index = -1;
 
@@ -213,7 +213,7 @@ void ulthread_destroy(void) {
     //printf("[destroy DEBUG] curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
 
     if(curr_thread->tid == 0) {
-        // printf("[DEBUG] Cannot destroy main thread.\n");
+        printf("[DEBUG] Cannot destroy main thread.\n");
         return;
     }
 
