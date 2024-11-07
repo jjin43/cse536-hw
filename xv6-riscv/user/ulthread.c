@@ -216,7 +216,8 @@ void ulthread_destroy(void) {
     printf("[*] ultdestroy(tid: %d)\n", curr_thread->tid);
 
     curr_thread->state = FREE;
-    // curr_thread = &all_thread[0];
+    struct context* temp = &(curr_thread->context);
+    curr_thread = &all_thread[0];
     num_threads--;
 
     ulthread_context_switch(&(curr_thread->context), &(all_thread[0].context));
