@@ -105,7 +105,7 @@ void ulthread_init(int schedalgo) {
 
     // Initialize memory
     for (int i = 0; i < MAXULTHREADS; i++) {
-        all_thread[i] = default_thread;
+        all_thread[i] = empty_thread;
     }
 
 
