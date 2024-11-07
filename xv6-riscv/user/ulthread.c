@@ -226,5 +226,8 @@ void ulthread_destroy(void) {
     curr_thread = &all_thread[0];
     num_threads--;
 
+    printf("[DEBUG] num_threads: %d\n", num_threads);
+    printf("all_thread[0].state: %d\n", all_thread[0].state);
+
     ulthread_context_switch(temp, &(all_thread[0].context));
 }
