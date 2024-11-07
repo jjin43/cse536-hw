@@ -15,7 +15,7 @@ struct ulthread all_thread[MAXULTHREADS];
 int num_threads = 0;
 int uid = 0;
 
-
+struct ulthread default_thread = {-1, FREE, {0}, -1, 0};
 
 // Scheduling algorithms
 int Roundrobin(void) {
@@ -105,7 +105,7 @@ void ulthread_init(int schedalgo) {
 
     // Initialize memory
     for (int i = 0; i < MAXULTHREADS; i++) {
-        all_thread[i] = empty_thread;
+        all_thread[i] = default_thread;
     }
 
 
