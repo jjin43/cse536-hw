@@ -179,15 +179,15 @@ void ulthread_schedule(void) {
                 break;
         }
 
+        /* Add this statement to denote which thread-id is being scheduled next */
+        printf("[*] ultschedule (next tid: %d)\n", all_thread[next_index].tid);
+        printf("[DEBUG] next_index: %d\n", next_index);
+
         if(next_index == -1) {
             printf("[DEBUG] No thread to schedule.\n");
             return;
         }
         
-        /* Add this statement to denote which thread-id is being scheduled next */
-        printf("[*] ultschedule (next tid: %d)\n", all_thread[next_index].tid);
-        printf("[DEBUG] next_index: %d\n", next_index);
-
         // Switch between thread contexts
         curr_thread = &all_thread[next_index];
         // printf("[schedule DEBUG] curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
