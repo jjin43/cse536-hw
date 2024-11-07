@@ -115,6 +115,7 @@ void ulthread_init(int schedalgo) {
     num_threads++;
     curr_thread = &all_thread[0];
     
+    printf("[DEBUG] curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
 }
 
 /* Thread creation */
@@ -179,6 +180,8 @@ void ulthread_schedule(void) {
     // Switch between thread contexts
     ulthread_context_switch(&(curr_thread), &(all_thread[next_index].context));
     curr_thread = &all_thread[next_index];
+    printf("[DEBUG] curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
+
 }
 
 /* Yield CPU time to some other thread. */
@@ -190,6 +193,8 @@ void ulthread_yield(void) {
 
 /* Destroy thread */
 void ulthread_destroy(void) {
+    printf("[DEBUG] curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
+
 
     if(curr_thread->tid == 0) {
         printf("[DEBUG] Cannot destroy main thread.\n");
