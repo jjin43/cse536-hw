@@ -192,6 +192,7 @@ void ulthread_yield(void) {
 void ulthread_destroy(void) {
 
     if(curr_thread->tid == 0) {
+        printf("[DEBUG] Cannot destroy main thread.\n");
         return;
     }
 
