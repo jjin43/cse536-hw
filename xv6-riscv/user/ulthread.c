@@ -175,7 +175,7 @@ void ulthread_schedule(void) {
     
     /* Add this statement to denote which thread-id is being scheduled next */
     printf("[*] ultschedule (next tid: %d)\n", all_thread[next_index].tid);
-
+    printf("[DEBUG] next_index: %d\n", next_index);
     // Switch between thread contexts
     ulthread_context_switch(&(curr_thread), &(all_thread[next_index].context));
     curr_thread = &all_thread[next_index];
