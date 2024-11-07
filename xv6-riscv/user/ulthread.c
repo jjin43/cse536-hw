@@ -153,7 +153,7 @@ bool ulthread_create(uint64 start, uint64 stack, uint64 args[], int priority) {
 /* Thread scheduler */
 void ulthread_schedule(void) {
 
-    while (num_threads > 1)
+    while (1)
     {
         int next_index = -1;
 
@@ -189,11 +189,10 @@ void ulthread_schedule(void) {
         }
         
         // Switch between thread contexts
-        struct ulthread_context temp = curr_thread->context;
         curr_thread = &all_thread[next_index];
         // printf("[schedule DEBUG] curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
         
-        ulthread_context_switch(temp, &(all_thread[next_index].context));
+        ulthread_context_switch(&(all_thread[0].context), &(all_thread[next_index].context));
     }
 }
 
