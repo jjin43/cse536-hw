@@ -157,6 +157,8 @@ void ulthread_schedule(void) {
     {
         int next_index = -1;
 
+        printf("[DEBUG] num_threads: %d\n", num_threads);
+        printf("[DEBUG] curr_algo: %d\n", curr_algo);
         switch (curr_algo)
         {
             case ROUNDROBIN:
