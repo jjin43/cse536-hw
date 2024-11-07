@@ -188,7 +188,6 @@ void ulthread_schedule(void) {
     // printf("[schedule DEBUG] curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
     
     ulthread_context_switch(&(all_thread[0].context), &(all_thread[next_index].context));
-
 }
 
 /* Yield CPU time to some other thread. */
@@ -217,8 +216,8 @@ void ulthread_destroy(void) {
     printf("[*] ultdestroy(tid: %d)\n", curr_thread->tid);
 
     curr_thread->state = FREE;
-    ulthread_context_switch(&(curr_thread->context), &(all_thread[0].context));
     curr_thread = &all_thread[0];
     num_threads--;
 
+    ulthread_context_switch(&(curr_thread->context), &(all_thread[0].context));
 }
