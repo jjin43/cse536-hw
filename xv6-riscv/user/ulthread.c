@@ -147,7 +147,7 @@ bool ulthread_create(uint64 start, uint64 stack, uint64 args[], int priority) {
     
     /* Please add thread-id instead of '0' here. */
     printf("[*] ultcreate(tid: %d, ra: %p, sp: %p)\n", all_thread[i].tid, start, stack);
-    return false;
+    return true;
 }
 
 /* Thread scheduler */
@@ -157,8 +157,9 @@ void ulthread_schedule(void) {
     {
         int next_index = -1;
 
-        printf("[DEBUG] num_threads: %d\n", num_threads);
-        printf("[DEBUG] curr_algo: %d\n", curr_algo);
+        // printf("[DEBUG] num_threads: %d\n", num_threads);
+        // printf("[DEBUG] curr_algo: %d\n", curr_algo);
+        
         switch (curr_algo)
         {
             case ROUNDROBIN:
@@ -193,8 +194,7 @@ void ulthread_schedule(void) {
         // printf("[schedule DEBUG] curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
         
         ulthread_context_switch(&(all_thread[0].context), &(all_thread[next_index].context));
-
-        printf("[DEBUG] num_threads: %d\n", num_threads);
+        
     }
 }
 
@@ -228,8 +228,5 @@ void ulthread_destroy(void) {
     curr_thread = &all_thread[0];
     num_threads--;
 
-    printf("[DEBUG] num_threads: %d\n", num_threads);
-    printf("all_thread[0].state: %d\n", all_thread[0].state);
-
-    ulthread_context_switch(temp, &(all_thread[0].context));
+    ulthread_context_switch(&temp, &(all_thread[0].context));
 }
