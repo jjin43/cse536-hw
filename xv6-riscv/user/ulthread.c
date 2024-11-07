@@ -113,7 +113,7 @@ void ulthread_init(int schedalgo) {
     all_thread[0].tid = uid++;
     all_thread[0].state = RUNNABLE;
     num_threads++;
-    // curr_thread = &all_thread[0];
+    curr_thread = &all_thread[0];
     
     // printf("[DEBUG] curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
 }
