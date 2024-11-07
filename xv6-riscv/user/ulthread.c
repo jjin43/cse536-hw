@@ -113,9 +113,9 @@ void ulthread_init(int schedalgo) {
     all_thread[0].tid = uid++;
     all_thread[0].state = RUNNABLE;
     num_threads++;
-    curr_thread = &all_thread[0];
+    // curr_thread = &all_thread[0];
     
-    printf("[DEBUG] curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
+    // printf("[DEBUG] curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
 }
 
 /* Thread creation */
@@ -176,10 +176,12 @@ void ulthread_schedule(void) {
     
     /* Add this statement to denote which thread-id is being scheduled next */
     printf("[*] ultschedule (next tid: %d)\n", all_thread[next_index].tid);
-    printf("[DEBUG] next_index: %d\n", next_index);
+    // printf("[DEBUG] next_index: %d\n", next_index);
+
     // Switch between thread contexts
     curr_thread = &all_thread[next_index];
-    printf("[schedule DEBUG] curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
+    // printf("[schedule DEBUG] curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
+    
     ulthread_context_switch(&(all_thread[0].context), &(all_thread[next_index].context));
 
 }
@@ -193,11 +195,10 @@ void ulthread_yield(void) {
 
 /* Destroy thread */
 void ulthread_destroy(void) {
-    printf("[destroy DEBUG] curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
-
+    //printf("[destroy DEBUG] curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
 
     if(curr_thread->tid == 0) {
-        printf("[DEBUG] Cannot destroy main thread.\n");
+        // printf("[DEBUG] Cannot destroy main thread.\n");
         return;
     }
 
