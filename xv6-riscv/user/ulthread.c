@@ -178,9 +178,9 @@ void ulthread_schedule(void) {
     printf("[*] ultschedule (next tid: %d)\n", all_thread[next_index].tid);
     printf("[DEBUG] next_index: %d\n", next_index);
     // Switch between thread contexts
-    ulthread_context_switch(&(curr_thread), &(all_thread[next_index].context));
     curr_thread = &all_thread[next_index];
     printf("[schedule DEBUG] curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
+    ulthread_context_switch(&(all_thread[0].context), &(all_thread[next_index].context));
 
 }
 
