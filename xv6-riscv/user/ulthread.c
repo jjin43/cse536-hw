@@ -180,7 +180,7 @@ void ulthread_schedule(void) {
     // Switch between thread contexts
     ulthread_context_switch(&(curr_thread), &(all_thread[next_index].context));
     curr_thread = &all_thread[next_index];
-    printf("[DEBUG] curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
+    printf("[schedule DEBUG] curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
 
 }
 
@@ -193,7 +193,7 @@ void ulthread_yield(void) {
 
 /* Destroy thread */
 void ulthread_destroy(void) {
-    printf("[DEBUG] curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
+    printf("[destroy DEBUG] curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
 
 
     if(curr_thread->tid == 0) {
