@@ -49,9 +49,9 @@ struct ulthread_context {
 struct ulthread {
   int tid;
   enum ulthread_state state;
-  int priority;
   struct ulthread_context context;
+  int priority;
   uint64 access_time;
-};
+} default_thread = {-1, FREE, {0}, -1, 0};
 
 #endif
