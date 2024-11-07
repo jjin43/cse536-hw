@@ -177,7 +177,7 @@ void ulthread_schedule(void) {
     printf("[*] ultschedule (next tid: %d)\n", all_thread[next_index].tid);
 
     // Switch between thread contexts
-    ulthread_context_switch(&(curr_thread->context), &(all_thread[next_index].context));
+    ulthread_context_switch(&(curr_thread), &(all_thread[next_index].context));
     curr_thread = &all_thread[next_index];
 }
 
@@ -190,6 +190,10 @@ void ulthread_yield(void) {
 
 /* Destroy thread */
 void ulthread_destroy(void) {
+
+    if(curr_thread->tid == 0) {
+        return;
+    }
 
     printf("[*] ultdestroy(tid: %d)\n", curr_thread->tid);
 
