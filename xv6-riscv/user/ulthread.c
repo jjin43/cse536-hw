@@ -152,42 +152,46 @@ bool ulthread_create(uint64 start, uint64 stack, uint64 args[], int priority) {
 
 /* Thread scheduler */
 void ulthread_schedule(void) {
-    int next_index = -1;
 
-    switch (curr_algo)
+    while (1)
     {
-        case ROUNDROBIN:
-            /* code */
-            next_index = Roundrobin();
-            break;
+        int next_index = -1;
 
-        case PRIORITY:
-            next_index = Priority();
-            break;
+        switch (curr_algo)
+        {
+            case ROUNDROBIN:
+                /* code */
+                next_index = Roundrobin();
+                break;
 
-        case FCFS:
-            next_index = Fcfs();
-            break;
+            case PRIORITY:
+                next_index = Priority();
+                break;
+
+            case FCFS:
+                next_index = Fcfs();
+                break;
+            
+            default:
+                printf("[DEBUG] Unexpected scheduling algorithm #.\n");
+                break;
+        }
+
+        if(next_index == -1) {
+            printf("[DEBUG] No thread to schedule.\n");
+            return;
+        }
         
-        default:
-            printf("[DEBUG] Unexpected scheduling algorithm #.\n");
-            break;
-    }
+        /* Add this statement to denote which thread-id is being scheduled next */
+        printf("[*] ultschedule (next tid: %d)\n", all_thread[next_index].tid);
+        printf("[DEBUG] next_index: %d\n", next_index);
 
-    if(next_index == -1) {
-        printf("[DEBUG] No thread to schedule.\n");
-        return;
+        // Switch between thread contexts
+        curr_thread = &all_thread[next_index];
+        // printf("[schedule DEBUG] curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
+        
+        ulthread_context_switch(&(all_thread[0].context), &(all_thread[next_index].context));
     }
-    
-    /* Add this statement to denote which thread-id is being scheduled next */
-    printf("[*] ultschedule (next tid: %d)\n", all_thread[next_index].tid);
-    printf("[DEBUG] next_index: %d\n", next_index);
-
-    // Switch between thread contexts
-    curr_thread = &all_thread[next_index];
-    // printf("[schedule DEBUG] curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
-    
-    ulthread_context_switch(&(all_thread[0].context), &(all_thread[next_index].context));
 }
 
 /* Yield CPU time to some other thread. */
