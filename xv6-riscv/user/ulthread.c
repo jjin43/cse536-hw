@@ -176,7 +176,7 @@ void ulthread_schedule(void) {
     
     /* Add this statement to denote which thread-id is being scheduled next */
     printf("[*] ultschedule (next tid: %d)\n", all_thread[next_index].tid);
-    // printf("[DEBUG] next_index: %d\n", next_index);
+    printf("[DEBUG] next_index: %d\n", next_index);
 
     // Switch between thread contexts
     curr_thread = &all_thread[next_index];
@@ -188,6 +188,13 @@ void ulthread_schedule(void) {
 
 /* Yield CPU time to some other thread. */
 void ulthread_yield(void) {
+
+    if (curr_thread->tid == 0) {
+        return;
+    }
+    else{
+        curr_thread->state = YIELD;
+    }
 
     /* Please add thread-id instead of '0' here. */
     printf("[*] ultyield(tid: %d)\n", 0);
