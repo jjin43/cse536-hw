@@ -153,7 +153,7 @@ bool ulthread_create(uint64 start, uint64 stack, uint64 args[], int priority) {
 /* Thread scheduler */
 void ulthread_schedule(void) {
 
-    while (1)
+    while (num_threads > 1)
     {
         int next_index = -1;
 
