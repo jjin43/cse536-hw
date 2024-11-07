@@ -52,7 +52,7 @@ int Priority(void) {
             if(target == -1) {
                 target = i;
 
-            } else if(all_thread[i].priority < all_thread[target].priority) {
+            } else if(all_thread[i].priority > all_thread[target].priority) {
                 target = i;
 
             }
@@ -216,7 +216,7 @@ void ulthread_destroy(void) {
     printf("[*] ultdestroy(tid: %d)\n", curr_thread->tid);
 
     curr_thread->state = FREE;
-    curr_thread = &all_thread[0];
+    // curr_thread = &all_thread[0];
     num_threads--;
 
     ulthread_context_switch(&(curr_thread->context), &(all_thread[0].context));
