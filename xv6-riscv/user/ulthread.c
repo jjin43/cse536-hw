@@ -121,7 +121,7 @@ void ulthread_init(int schedalgo) {
 /* Thread creation */
 bool ulthread_create(uint64 start, uint64 stack, uint64 args[], int priority) {
 
-    int i = 0;
+    int i;
     for (i = 1; i < MAXULTHREADS; i++) {
 
         // Find free thread and load mem
@@ -181,7 +181,7 @@ void ulthread_schedule(void) {
     
     /* Add this statement to denote which thread-id is being scheduled next */
     printf("[*] ultschedule (next tid: %d)\n", all_thread[next_index].tid);
-    // printf("[DEBUG] next_index: %d\n", next_index);
+    printf("[DEBUG] next_index: %d\n", next_index);
 
     // Switch between thread contexts
     curr_thread = &all_thread[next_index];
@@ -220,5 +220,5 @@ void ulthread_destroy(void) {
     curr_thread = &all_thread[0];
     num_threads--;
 
-    ulthread_context_switch(&(curr_thread->context), &(all_thread[0].context));
+    ulthread_context_switch(temp, &(all_thread[0].context));
 }
