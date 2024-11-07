@@ -11,7 +11,7 @@
 
 enum ulthread_scheduling_algorithm curr_algo;
 struct ulthread* curr_thread = 0;
-struct ulthread all_thread[MAXULTHREADS];
+struct ulthread all_threads[MAXULTHREADS];
 int num_threads = 0;
 int uid = 0;
 
@@ -23,7 +23,7 @@ int Roundrobin(void) {
     int target = -1;
 
     for(int i=curr_thread+1; i < num_threads; i++) {
-        if(all_thread[i].state == RUNNABLE) {
+        if(all_threads[i].state == RUNNABLE) {
             target = i;
             break;
         }
@@ -31,7 +31,7 @@ int Roundrobin(void) {
 
     if(target == -1) {
         for(int i=1; i < curr_thread; i++) {
-            if(all_thread[i].state == RUNNABLE) {
+            if(all_threads[i].state == RUNNABLE) {
                 target = i;
                 break;
             }
@@ -47,18 +47,18 @@ int Priority(void) {
 
     for(int i=1; i < num_threads; i++) {
 
-        if(all_thread[i].state == RUNNABLE) {
+        if(all_threads[i].state == RUNNABLE) {
 
             if(target == -1) {
                 target = i;
 
-            } else if(all_thread[i].priority > all_thread[target].priority) {
+            } else if(all_threads[i].priority > all_threads[target].priority) {
                 target = i;
 
             }
-            else if(all_thread[i].priority == all_thread[target].priority) {
+            else if(all_threads[i].priority == all_threads[target].priority) {
 
-                if(all_thread[i].access_time < all_thread[target].access_time) {
+                if(all_threads[i].access_time < all_threads[target].access_time) {
                     target = i;
                 }
 
@@ -74,14 +74,14 @@ int Fcfs(void) {
     int target = -1;
 
     for(int i=1; i < num_threads; i++) {
-        if(all_thread[i].state == RUNNABLE) {
+        if(all_threads[i].state == RUNNABLE) {
 
             if(target == -1) {
                 target = i;
 
             } else {
 
-                if(all_thread[i].access_time < all_thread[target].access_time) {
+                if(all_threads[i].access_time < all_threads[target].access_time) {
                     target = i;
                 }
 
@@ -105,15 +105,15 @@ void ulthread_init(int schedalgo) {
 
     // Initialize memory
     for (int i = 0; i < MAXULTHREADS; i++) {
-        all_thread[i] = default_thread;
+        all_threads[i] = default_thread;
     }
 
 
     // Initialize the user scheduler thread
-    all_thread[0].tid = uid++;
-    all_thread[0].state = RUNNABLE;
+    all_threads[0].tid = uid++;
+    all_threads[0].state = RUNNABLE;
     num_threads++;
-    curr_thread = &all_thread[0];
+    curr_thread = &all_threads[0];
     
     // printf("[DEBUG] curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
 }
@@ -125,20 +125,20 @@ bool ulthread_create(uint64 start, uint64 stack, uint64 args[], int priority) {
     for (i = 1; i < MAXULTHREADS; i++) {
 
         // Find free thread and load mem
-        if (all_thread[i].state == FREE) {
-            all_thread[i].tid = uid++;
-            all_thread[i].state = RUNNABLE;
-            all_thread[i].priority = priority;
-            all_thread[i].access_time = ctime();
+        if (all_threads[i].state == FREE) {
+            all_threads[i].tid = uid++;
+            all_threads[i].state = RUNNABLE;
+            all_threads[i].priority = priority;
+            all_threads[i].access_time = ctime();
 
-            all_thread[i].context.ra = start;
-            all_thread[i].context.sp = stack;
-            all_thread[i].context.a0 = args[0];
-            all_thread[i].context.a1 = args[1];
-            all_thread[i].context.a2 = args[2];
-            all_thread[i].context.a3 = args[3];
-            all_thread[i].context.a4 = args[4];
-            all_thread[i].context.a5 = args[5];
+            all_threads[i].context.ra = start;
+            all_threads[i].context.sp = stack;
+            all_threads[i].context.a0 = args[0];
+            all_threads[i].context.a1 = args[1];
+            all_threads[i].context.a2 = args[2];
+            all_threads[i].context.a3 = args[3];
+            all_threads[i].context.a4 = args[4];
+            all_threads[i].context.a5 = args[5];
 
             num_threads++;
             break;
@@ -146,7 +146,7 @@ bool ulthread_create(uint64 start, uint64 stack, uint64 args[], int priority) {
     }
     
     /* Please add thread-id instead of '0' here. */
-    printf("[*] ultcreate(tid: %d, ra: %p, sp: %p)\n", all_thread[i].tid, start, stack);
+    printf("[*] ultcreate(tid: %d, ra: %p, sp: %p)\n", all_threads[i].tid, start, stack);
     return true;
 }
 
@@ -159,7 +159,7 @@ void ulthread_schedule(void) {
 
         // printf("[DEBUG] num_threads: %d\n", num_threads);
         // printf("[DEBUG] curr_algo: %d\n", curr_algo);
-        
+
         switch (curr_algo)
         {
             case ROUNDROBIN:
@@ -181,8 +181,8 @@ void ulthread_schedule(void) {
         }
 
         /* Add this statement to denote which thread-id is being scheduled next */
-        printf("[*] ultschedule (next tid: %d)\n", all_thread[next_index].tid);
-        printf("[DEBUG] next_index: %d\n", next_index);
+        printf("[*] ultschedule (next tid: %d)\n", all_threads[next_index].tid);
+        // printf("[DEBUG] next_index: %d\n", next_index);
 
         if(next_index == -1) {
             printf("[DEBUG] No thread to schedule.\n");
@@ -190,11 +190,13 @@ void ulthread_schedule(void) {
         }
         
         // Switch between thread contexts
-        curr_thread = &all_thread[next_index];
+        curr_thread = &all_threads[next_index];
         // printf("[schedule DEBUG] curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
         
-        ulthread_context_switch(&(all_thread[0].context), &(all_thread[next_index].context));
+        ulthread_context_switch(&(all_threads[0].context), &(all_threads[next_index].context));
         
+        printf("Returned to scheduler\n");
+        printf("num_threads: %d\n", num_threads);
     }
 }
 
@@ -225,8 +227,8 @@ void ulthread_destroy(void) {
 
     curr_thread->state = FREE;
     struct ulthread_context temp = curr_thread->context;
-    curr_thread = &all_thread[0];
+    curr_thread = &all_threads[0];
     num_threads--;
 
-    ulthread_context_switch(&temp, &(all_thread[0].context));
+    ulthread_context_switch(&temp, &(all_threads[0].context));
 }
