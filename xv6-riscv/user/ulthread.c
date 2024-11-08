@@ -42,8 +42,6 @@ int Roundrobin(enum ulthread_state target_state) {
         }
     }
 
-    printf("[DEBUG] target: %d\n", target);
-
     return target;
 }
 
@@ -164,8 +162,8 @@ void ulthread_schedule(void) {
         int next_index = -1;
         enum ulthread_state target_state = RUNNABLE;
 
-        printf("[DEBUG] num_threads: %d\n", num_threads);
-        printf("[DEBUG] curr_algo: %d\n", curr_algo);
+        // printf("[DEBUG] num_threads: %d\n", num_threads);
+        // printf("[DEBUG] curr_algo: %d\n", curr_algo);
 
         Schedule_again:
 
@@ -191,7 +189,7 @@ void ulthread_schedule(void) {
 
 
         if(next_index == -1 && num_threads > 1) {
-            printf("[DEBUG] No thread to schedule.\n");
+            // printf("[DEBUG] No thread to schedule.\n");
             if(target_state == RUNNABLE)
                 target_state = YIELD;
             else
@@ -250,6 +248,6 @@ void ulthread_destroy(void) {
     struct ulthread_context temp = curr_thread->context;
     curr_thread = &all_threads[0];
     num_threads--;
-    printf("[DEBUG] num_threads: %d\n", num_threads);
+    // printf("[DEBUG] num_threads: %d\n", num_threads);
     ulthread_context_switch(&temp, &(all_threads[0].context));
 }
