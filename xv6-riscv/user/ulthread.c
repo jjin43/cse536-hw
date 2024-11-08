@@ -134,11 +134,11 @@ bool ulthread_create(uint64 start, uint64 stack, uint64 args[], int priority) {
             all_threads[i].context.ra = start;
             all_threads[i].context.sp = stack;
             all_threads[i].context.s0 = args[0];
-            all_threads[i].context.s1 = args[1];
-            all_threads[i].context.s2 = args[2];
-            all_threads[i].context.s3 = args[3];
-            all_threads[i].context.s4 = args[4];
-            all_threads[i].context.s5 = args[5];
+            all_threads[i].context.a1 = args[1];
+            all_threads[i].context.a2 = args[2];
+            all_threads[i].context.a3 = args[3];
+            all_threads[i].context.a4 = args[4];
+            all_threads[i].context.a5 = args[5];
 
             num_threads++;
             break;
@@ -195,8 +195,9 @@ void ulthread_schedule(void) {
         
         ulthread_context_switch(&(all_threads[0].context), &(all_threads[next_index].context));
         
-        printf("Returned to scheduler\n");
-        printf("num_threads: %d, uid: %d\n", num_threads, uid);
+        // printf("Returned to scheduler\n");
+        // printf("num_threads: %d, uid: %d\n", num_threads, uid);
+        // printf("curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
     }
 }
 

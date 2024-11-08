@@ -1,8 +1,10 @@
 .globl ulthread_context_switch
 ulthread_context_switch:
-# reference - https://github.com/mit-pdos/xv6-riscv/blob/riscv/kernel/swtch.S
+
+        # Save curr thread context
         sd ra, 0(a0)
         sd sp, 8(a0)
+
         sd s0, 16(a0)
         sd s1, 24(a0)
         sd s2, 32(a0)
@@ -16,8 +18,17 @@ ulthread_context_switch:
         sd s10, 96(a0)
         sd s11, 104(a0)
 
+        sd a0, 112(a0)
+        sd a1, 120(a0)
+        sd a2, 128(a0)
+        sd a3, 136(a0)
+        sd a4, 144(a0)
+        sd a5, 152(a0)
+
+        # Load next thread context
         ld ra, 0(a1)
         ld sp, 8(a1)
+
         ld s0, 16(a1)
         ld s1, 24(a1)
         ld s2, 32(a1)
@@ -30,11 +41,12 @@ ulthread_context_switch:
         ld s9, 88(a1)
         ld s10, 96(a1)
         ld s11, 104(a1)
-        
-        add a0, s0, 0
-        add a1, s1, 0
-        add a2, s2, 0
-        add a3, s3, 0
-        add a4, s4, 0
-        add a5, s5, 0
+
+        ld a0, 112(a1)
+        ld a1, 120(a1)
+        ld a2, 128(a1)
+        ld a3, 136(a1)
+        ld a4, 144(a1)
+        ld a5, 152(a1)
+
         ret
