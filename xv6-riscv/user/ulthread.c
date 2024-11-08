@@ -199,18 +199,19 @@ void ulthread_schedule(void) {
 
         if(next_index == -1 && num_threads > 1) {
             // printf("[DEBUG] No thread to schedule.\n");
-            if(target_state == RUNNABLE)
-                target_state = YIELD;
-            else
-                break;;
-
-            goto Schedule_again;
-            
+            if(target_state == RUNNABLE){
+                next_index = Roundrobin(YIELD);
+                if(next_index == -1) {
+                    printf("[DEBUG] No thread to schedule.\n");
+                    return;
+                }
+                else{
+                    all_threads[next_index].state = RUNNABLE;
+                }
+            }
+                   
         }
 
-        if(target_state == YIELD){
-            all_threads[next_index].state = RUNNABLE;
-        }
 
         /* Add this statement to denote which thread-id is being scheduled next */
         printf("[*] ultschedule (next tid: %d)\n", all_threads[next_index].tid);
