@@ -124,7 +124,7 @@ bool ulthread_create(uint64 start, uint64 stack, uint64 args[], int priority) {
     int i;
     for (i = 1; i < MAXULTHREADS; i++) {
 
-        // Find free thread and load mem
+        // Find free thread and load context
         if (all_threads[i].state == FREE) {
             all_threads[i].tid = uid++;
             all_threads[i].state = RUNNABLE;

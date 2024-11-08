@@ -22,14 +22,6 @@ struct ulthread_context {
   uint64 ra;
   uint64 sp;
 
-  // argument registers to pass
-  uint64 a0;
-  uint64 a1;
-  uint64 a2;
-  uint64 a3;
-  uint64 a4;
-  uint64 a5;
-
   // save caller registers
   uint64 s0;
   uint64 s1;
@@ -43,6 +35,14 @@ struct ulthread_context {
   uint64 s9;
   uint64 s10;
   uint64 s11;
+
+  // argument registers to pass
+  uint64 a0;
+  uint64 a1;
+  uint64 a2;
+  uint64 a3;
+  uint64 a4;
+  uint64 a5;
 };
 
 // Thread structure
