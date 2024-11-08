@@ -207,8 +207,8 @@ void ulthread_schedule(void) {
         
         ulthread_context_switch(&(all_threads[0].context), &(all_threads[next_index].context));
         
-        // printf("Returned to scheduler\n");
-        // printf("num_threads: %d, uid: %d\n", num_threads, uid);
+        printf("Returned to scheduler\n");
+        printf("num_threads: %d, uid: %d\n", num_threads, uid);
         // printf("curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
     }
 }
