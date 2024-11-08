@@ -190,6 +190,8 @@ void ulthread_schedule(void) {
             printf("[DEBUG] No thread to schedule.\n");
             if(target_state == RUNNABLE)
                 target_state = YIELD;
+            else
+                target_state = RUNNABLE;
 
             goto Schedule_again;
             
