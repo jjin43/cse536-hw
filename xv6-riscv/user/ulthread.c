@@ -253,14 +253,9 @@ void ulthread_destroy(void) {
 
     printf("[*] ultdestroy(tid: %d)\n", curr_thread->tid);
 
+
     curr_thread->state = FREE;
-
-
     struct ulthread_context temp = curr_thread->context;
-    curr_thread = &all_threads[0];
-    num_threads--;
-
-    curr_thread->state = FREE;
     int curr_index = -1;
 
     // Find the index of the current thread
@@ -283,6 +278,7 @@ void ulthread_destroy(void) {
 
     // Clear the last element
     all_threads[num_threads - 1] = default_thread;
+    num_threads--;
 
     printf("[DEBUG] num_threads: %d\n", num_threads);
     ulthread_context_switch(&temp, &(all_threads[0].context));
