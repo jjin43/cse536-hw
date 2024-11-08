@@ -11,7 +11,6 @@
 
 enum ulthread_scheduling_algorithm curr_algo;
 struct ulthread* curr_thread = 0;
-int prev_tid = 0;
 struct ulthread all_threads[MAXULTHREADS];
 int num_threads = 0;
 int uid = 0;
@@ -22,22 +21,8 @@ struct ulthread default_thread = {-1, FREE, {0}, -1, 0};
 int Roundrobin(enum ulthread_state target_state) {
     
     int target = -1;
-    int prev_index = -1;
 
-    if(prev_tid != 0) {
-        for(int i=1; i < num_threads; i++) {
-            if(all_threads[i].tid == prev_tid) {
-                prev_index = i;
-            }
-        }
-
-        if(prev_index == -1) {
-            printf("[DEBUG] Current thread not found.\n");
-            return -1;
-        }
-    }
-
-    for(int i=prev_index+1; i < num_threads; i++) {
+    for(int i=curr_thread->tid+1; i < num_threads; i++) {
         if(all_threads[i].state == target_state) {
             target = i;
             break;
@@ -45,13 +30,15 @@ int Roundrobin(enum ulthread_state target_state) {
     }
 
     if(target == -1) {
-        for(int i=1; i < prev_index; i++) {
+        for(int i=1; i < curr_thread->tid; i++) {
             if(all_threads[i].state == target_state) {
                 target = i;
                 break;
             }
         }
     }
+
+    printf("[DEBUG] target: %d\n", target);
 
     return target;
 }
@@ -173,8 +160,8 @@ void ulthread_schedule(void) {
         int next_index = -1;
         enum ulthread_state target_state = RUNNABLE;
 
-        // printf("[DEBUG] num_threads: %d\n", num_threads);
-        // printf("[DEBUG] curr_algo: %d\n", curr_algo);
+        printf("[DEBUG] num_threads: %d\n", num_threads);
+        printf("[DEBUG] curr_algo: %d\n", curr_algo);
 
         Schedule_again:
 
@@ -201,11 +188,10 @@ void ulthread_schedule(void) {
 
         if(next_index == -1 && num_threads > 1) {
             printf("[DEBUG] No thread to schedule.\n");
-            printf("[DEBUG] target_state: %d\n", target_state);
             if(target_state == RUNNABLE)
                 target_state = YIELD;
             else
-                break;
+                break;;
 
             goto Schedule_again;
             
@@ -227,7 +213,6 @@ void ulthread_schedule(void) {
         // printf("[DEBUG] Returned to Scheduler\n");
         // printf("curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
     }
-    prev_tid = 0;
 }
 
 /* Yield CPU time to some other thread. */
@@ -257,35 +242,10 @@ void ulthread_destroy(void) {
 
     printf("[*] ultdestroy(tid: %d)\n", curr_thread->tid);
 
-
     curr_thread->state = FREE;
     struct ulthread_context temp = curr_thread->context;
-    prev_tid = curr_thread->tid;
-    int curr_index = -1;
-
-    // Find the index of the current thread
-    for (int i = 0; i < num_threads; i++) {
-        if (all_threads[i].tid == curr_thread->tid) {
-            curr_index = i;
-            break;
-        }
-    }
-
-    if (curr_index == -1) {
-        printf("[DEBUG] Current thread not found.\n");
-        return;
-    }
-
-    // Move elements up to fill the gap
-    for (int i = curr_index; i < num_threads - 1; i++) {
-        all_threads[i] = all_threads[i + 1];
-    }
-
-    // Clear the last element
-    all_threads[num_threads - 1] = default_thread;
     curr_thread = &all_threads[0];
     num_threads--;
-
     printf("[DEBUG] num_threads: %d\n", num_threads);
     ulthread_context_switch(&temp, &(all_threads[0].context));
 }
