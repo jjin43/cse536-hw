@@ -40,6 +40,9 @@ int Roundrobin(enum ulthread_state target_state) {
             target = i;
             break;
         }
+        else if(all_threads[i].state == YIELD && target_state == RUNNABLE) {
+            all_threads[i].state = RUNNABLE;
+        }
     }
 
     if(target == -1) {
@@ -47,6 +50,9 @@ int Roundrobin(enum ulthread_state target_state) {
             if(all_threads[i].state == target_state) {
                 target = i;
                 break;
+            }
+            else if(all_threads[i].state == YIELD && target_state == RUNNABLE) {
+                all_threads[i].state = RUNNABLE;
             }
         }
     }
@@ -77,6 +83,9 @@ int Priority(enum ulthread_state target_state) {
 
             }
         }
+        else if(all_threads[i].state == YIELD && target_state == RUNNABLE) {
+            all_threads[i].state = RUNNABLE;
+        }
     }
 
     return target;
@@ -100,6 +109,9 @@ int Fcfs(enum ulthread_state target_state) {
 
             }
 
+        }
+        else if(all_threads[i].state == YIELD && target_state == RUNNABLE) {
+            all_threads[i].state = RUNNABLE;
         }
     }
 
@@ -206,10 +218,6 @@ void ulthread_schedule(void) {
 
             goto Schedule_again;
             
-        }
-
-        if(target_state == YIELD){
-            all_threads[next_index].state = RUNNABLE;
         }
 
         /* Add this statement to denote which thread-id is being scheduled next */
