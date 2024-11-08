@@ -158,7 +158,7 @@ void ulthread_schedule(void) {
         int next_index = -1;
         enum ulthread_state target_state = RUNNABLE;
 
-        // printf("[DEBUG] num_threads: %d\n", num_threads);
+        printf("[DEBUG] num_threads: %d\n", num_threads);
         // printf("[DEBUG] curr_algo: %d\n", curr_algo);
 
         Schedule_again:
@@ -206,9 +206,6 @@ void ulthread_schedule(void) {
         // printf("[schedule DEBUG] curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
         
         ulthread_context_switch(&(all_threads[0].context), &(all_threads[next_index].context));
-        
-        printf("Returned to scheduler\n");
-        printf("num_threads: %d, uid: %d\n", num_threads, uid);
         // printf("curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
     }
 }
