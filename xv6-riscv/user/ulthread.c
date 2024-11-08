@@ -38,6 +38,8 @@ int Roundrobin(enum ulthread_state target_state) {
         }
     }
 
+    printf("[DEBUG] target: %d\n", target);
+
     return target;
 }
 
