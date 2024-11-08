@@ -49,7 +49,7 @@ main(int argc, char *argv[])
     memset(&stacks, 0, sizeof(stacks));
 
     /* Initialize the user-level threading library */
-    ulthread_init(ROUNDROBIN);
+    ulthread_init(PRIORITY);
 
     /* Create a user-level thread */
     uint64 args[6] = {1,1,1,1,0,0};
