@@ -23,17 +23,19 @@ int Roundrobin(enum ulthread_state target_state) {
     int target = -1;
     int curr_index = -1;
 
-    for(int i=1; i < num_threads; i++) {
-        if(all_threads[i].tid == curr_thread->tid) {
-            curr_index = i;
+    if(curr_thread->tid != 0) {
+        for(int i=1; i < num_threads; i++) {
+            if(all_threads[i].tid == curr_thread->tid) {
+                curr_index = i;
+            }
+        }
+
+        if(curr_index == -1) {
+            printf("[DEBUG] Current thread not found.\n");
+            return -1;
         }
     }
-
-    if(curr_index == -1) {
-        printf("[DEBUG] Current thread not found.\n");
-        return -1;
-    }
-
+    
     for(int i=curr_index+1; i < num_threads; i++) {
         if(all_threads[i].state == target_state) {
             target = i;
