@@ -1,6 +1,9 @@
 .globl ulthread_context_switch
 ulthread_context_switch:
 
+        # 's' registers have to come before 'a' registers
+        # else it causes problems saving main thread
+        
         # Save curr thread context
         sd ra, 0(a0)
         sd sp, 8(a0)
@@ -28,6 +31,7 @@ ulthread_context_switch:
         # Load next thread context
         ld ra, 0(a1)
         ld sp, 8(a1)
+
 
         ld s0, 16(a1)
         ld s1, 24(a1)

@@ -18,12 +18,12 @@ int uid = 0;
 struct ulthread default_thread = {-1, FREE, {0}, -1, 0};
 
 // Scheduling algorithms
-int Roundrobin(void) {
+int Roundrobin(enum ulthread_state target_state) {
     
     int target = -1;
 
     for(int i=curr_thread+1; i < num_threads; i++) {
-        if(all_threads[i].state == RUNNABLE) {
+        if(all_threads[i].state == target_state) {
             target = i;
             break;
         }
@@ -31,7 +31,7 @@ int Roundrobin(void) {
 
     if(target == -1) {
         for(int i=1; i < curr_thread; i++) {
-            if(all_threads[i].state == RUNNABLE) {
+            if(all_threads[i].state == target_state) {
                 target = i;
                 break;
             }
@@ -41,13 +41,13 @@ int Roundrobin(void) {
     return target;
 }
 
-int Priority(void) {
+int Priority(enum ulthread_state target_state) {
 
     int target = -1;
 
     for(int i=1; i < num_threads; i++) {
 
-        if(all_threads[i].state == RUNNABLE) {
+        if(all_threads[i].state == target_state) {
 
             if(target == -1) {
                 target = i;
@@ -69,12 +69,12 @@ int Priority(void) {
     return target;
 }
 
-int Fcfs(void) {
+int Fcfs(enum ulthread_state target_state) {
 
     int target = -1;
 
     for(int i=1; i < num_threads; i++) {
-        if(all_threads[i].state == RUNNABLE) {
+        if(all_threads[i].state == target_state) {
 
             if(target == -1) {
                 target = i;
@@ -101,7 +101,7 @@ int get_current_tid(void) {
 /* Thread initialization */
 void ulthread_init(int schedalgo) {
 
-    curr_algo = schedalgo;    
+    curr_algo = schedalgo;
 
     // Initialize memory
     for (int i = 0; i < MAXULTHREADS; i++) {
@@ -156,23 +156,26 @@ void ulthread_schedule(void) {
     while (num_threads > 1)
     {
         int next_index = -1;
+        enum ulthread_state target_state = RUNNABLE;
 
         // printf("[DEBUG] num_threads: %d\n", num_threads);
         // printf("[DEBUG] curr_algo: %d\n", curr_algo);
+
+        Schedule_again:
 
         switch (curr_algo)
         {
             case ROUNDROBIN:
                 /* code */
-                next_index = Roundrobin();
+                next_index = Roundrobin(target_state);
                 break;
 
             case PRIORITY:
-                next_index = Priority();
+                next_index = Priority(target_state);
                 break;
 
             case FCFS:
-                next_index = Fcfs();
+                next_index = Fcfs(target_state);
                 break;
             
             default:
@@ -185,8 +188,9 @@ void ulthread_schedule(void) {
         // printf("[DEBUG] next_index: %d\n", next_index);
 
         if(next_index == -1) {
-            printf("[DEBUG] No thread to schedule.\n");
-            return;
+            target_state = YIELD;
+            goto Schedule_again;
+            
         }
         
         // Switch between thread contexts
@@ -212,7 +216,9 @@ void ulthread_yield(void) {
     }
 
     /* Please add thread-id instead of '0' here. */
-    printf("[*] ultyield(tid: %d)\n", 0);
+    printf("[*] ultyield(tid: %d)\n", curr_thread->tid);
+
+    ulthread_context_switch(&(curr_thread->context), &(all_threads[0].context));
 }
 
 /* Destroy thread */

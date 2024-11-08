@@ -28,8 +28,8 @@ void ul_start_func(int a1) {
     uint64 prev_time = start_time;
 
     /* Execute for a really long period */
-    for (int i = 0; i < 10000000; i++) {
-        if (i%1000000 == 0) {
+    for (int i = 0; i < 1000000000; i++) {
+        if (i%100000000 == 0) {
             if ((get_current_time() - prev_time) >= 10000) { 
                 ulthread_yield();
                 prev_time = get_current_time();

@@ -22,6 +22,8 @@ struct ulthread_context {
   uint64 ra;
   uint64 sp;
 
+  // Must follow same order as in ulthread_switch.S
+
   // save caller registers
   uint64 s0;
   uint64 s1;
