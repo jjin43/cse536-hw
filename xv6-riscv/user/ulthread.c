@@ -22,7 +22,7 @@ int Roundrobin(enum ulthread_state target_state) {
     
     int target = -1;
 
-    for(int i=curr_thread+1; i < num_threads; i++) {
+    for(int i=curr_thread->tid+1; i < num_threads; i++) {
         if(all_threads[i].state == target_state) {
             target = i;
             break;
@@ -30,7 +30,7 @@ int Roundrobin(enum ulthread_state target_state) {
     }
 
     if(target == -1) {
-        for(int i=1; i < curr_thread; i++) {
+        for(int i=1; i < curr_thread->tid; i++) {
             if(all_threads[i].state == target_state) {
                 target = i;
                 break;
