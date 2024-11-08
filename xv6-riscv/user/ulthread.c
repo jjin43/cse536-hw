@@ -133,7 +133,7 @@ bool ulthread_create(uint64 start, uint64 stack, uint64 args[], int priority) {
 
             all_threads[i].context.ra = start;
             all_threads[i].context.sp = stack;
-            all_threads[i].context.s0 = args[0];
+            all_threads[i].context.a0 = args[0];
             all_threads[i].context.a1 = args[1];
             all_threads[i].context.a2 = args[2];
             all_threads[i].context.a3 = args[3];
