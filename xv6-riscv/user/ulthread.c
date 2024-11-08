@@ -200,6 +200,7 @@ void ulthread_schedule(void) {
         if(next_index == -1 && num_threads > 1) {
             // printf("[DEBUG] No thread to schedule.\n");
             if(target_state == RUNNABLE){
+                printf("[DEBUG] Looking for YIELD threads.\n");
                 next_index = Roundrobin(YIELD);
                 if(next_index == -1) {
                     printf("[DEBUG] No thread to schedule.\n");
