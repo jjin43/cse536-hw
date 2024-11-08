@@ -188,9 +188,17 @@ void ulthread_schedule(void) {
         // printf("[DEBUG] next_index: %d\n", next_index);
 
         if(next_index == -1) {
-            target_state = YIELD;
+            if(target_state == RUNNABLE)
+                target_state = YIELD;
+            else
+                target_state = RUNNABLE;
+                
             goto Schedule_again;
             
+        }
+
+        if(target_state == YIELD){
+            all_threads[next_index].state = RUNNABLE;
         }
         
         // Switch between thread contexts
