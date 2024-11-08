@@ -183,16 +183,11 @@ void ulthread_schedule(void) {
                 break;
         }
 
-        /* Add this statement to denote which thread-id is being scheduled next */
-        printf("[*] ultschedule (next tid: %d)\n", all_threads[next_index].tid);
-        // printf("[DEBUG] next_index: %d\n", next_index);
 
         if(next_index == -1) {
             if(target_state == RUNNABLE)
                 target_state = YIELD;
-            else
-                target_state = RUNNABLE;
-                
+
             goto Schedule_again;
             
         }
@@ -200,6 +195,10 @@ void ulthread_schedule(void) {
         if(target_state == YIELD){
             all_threads[next_index].state = RUNNABLE;
         }
+
+        /* Add this statement to denote which thread-id is being scheduled next */
+        printf("[*] ultschedule (next tid: %d)\n", all_threads[next_index].tid);
+        // printf("[DEBUG] next_index: %d\n", next_index);
         
         // Switch between thread contexts
         curr_thread = &all_threads[next_index];
