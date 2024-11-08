@@ -21,6 +21,10 @@ struct ulthread default_thread = {-1, FREE, {0}, -1, 0};
 int Roundrobin(enum ulthread_state target_state) {
     
     int target = -1;
+    int upper = num_threads;
+    if (curr_thread->tid == 0) {
+        upper = MAXULTHREADS;
+    }
 
     for(int i=curr_thread->tid+1; i < num_threads; i++) {
         if(all_threads[i].state == target_state) {
@@ -47,7 +51,7 @@ int Priority(enum ulthread_state target_state) {
 
     int target = -1;
 
-    for(int i=1; i < num_threads; i++) {
+    for(int i=1; i < MAXULTHREADS; i++) {
 
         if(all_threads[i].state == target_state) {
 
@@ -75,7 +79,7 @@ int Fcfs(enum ulthread_state target_state) {
 
     int target = -1;
 
-    for(int i=1; i < num_threads; i++) {
+    for(int i=1; i < MAXULTHREADS; i++) {
         if(all_threads[i].state == target_state) {
 
             if(target == -1) {
