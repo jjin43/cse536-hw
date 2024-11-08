@@ -216,6 +216,7 @@ void ulthread_schedule(void) {
             else
                 target_state = RUNNABLE;
 
+            // Keep trying untill num_threads == 1
             goto Schedule_again;
             
         }
