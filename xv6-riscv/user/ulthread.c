@@ -188,6 +188,7 @@ void ulthread_schedule(void) {
 
         if(next_index == -1 && num_threads > 1) {
             printf("[DEBUG] No thread to schedule.\n");
+            printf("[DEBUG] target_state: %d\n", target_state);
             if(target_state == RUNNABLE)
                 target_state = YIELD;
             else
