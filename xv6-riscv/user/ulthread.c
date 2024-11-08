@@ -11,6 +11,7 @@
 
 enum ulthread_scheduling_algorithm curr_algo;
 struct ulthread* curr_thread = 0;
+int prev_tid = 0;
 struct ulthread all_threads[MAXULTHREADS];
 int num_threads = 0;
 int uid = 0;
@@ -21,22 +22,22 @@ struct ulthread default_thread = {-1, FREE, {0}, -1, 0};
 int Roundrobin(enum ulthread_state target_state) {
     
     int target = -1;
-    int curr_index = -1;
+    int prev_index = -1;
 
-    if(curr_thread->tid != 0) {
+    if(prev_tid != 0) {
         for(int i=1; i < num_threads; i++) {
-            if(all_threads[i].tid == curr_thread->tid) {
-                curr_index = i;
+            if(all_threads[i].tid == prev_tid) {
+                prev_index = i;
             }
         }
 
-        if(curr_index == -1) {
+        if(prev_index == -1) {
             printf("[DEBUG] Current thread not found.\n");
             return -1;
         }
     }
-    
-    for(int i=curr_index+1; i < num_threads; i++) {
+
+    for(int i=prev_index+1; i < num_threads; i++) {
         if(all_threads[i].state == target_state) {
             target = i;
             break;
@@ -44,7 +45,7 @@ int Roundrobin(enum ulthread_state target_state) {
     }
 
     if(target == -1) {
-        for(int i=1; i < curr_index; i++) {
+        for(int i=1; i < prev_index; i++) {
             if(all_threads[i].state == target_state) {
                 target = i;
                 break;
@@ -226,6 +227,7 @@ void ulthread_schedule(void) {
         // printf("[DEBUG] Returned to Scheduler\n");
         // printf("curr_thread->tid: %d, state:%d\n", curr_thread->tid, curr_thread->state);
     }
+    prev_tid = 0;
 }
 
 /* Yield CPU time to some other thread. */
@@ -258,6 +260,7 @@ void ulthread_destroy(void) {
 
     curr_thread->state = FREE;
     struct ulthread_context temp = curr_thread->context;
+    prev_tid = curr_thread->tid;
     int curr_index = -1;
 
     // Find the index of the current thread
@@ -280,6 +283,7 @@ void ulthread_destroy(void) {
 
     // Clear the last element
     all_threads[num_threads - 1] = default_thread;
+    curr_thread = &all_threads[0];
     num_threads--;
 
     printf("[DEBUG] num_threads: %d\n", num_threads);
