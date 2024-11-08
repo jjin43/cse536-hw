@@ -26,7 +26,7 @@ int Roundrobin(enum ulthread_state target_state) {
         upper = MAXULTHREADS;
     }
 
-    for(int i=curr_thread->tid+1; i < num_threads; i++) {
+    for(int i=curr_thread->tid+1; i < upper; i++) {
         if(all_threads[i].state == target_state) {
             target = i;
             break;
