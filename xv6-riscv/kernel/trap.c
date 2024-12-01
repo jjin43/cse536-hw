@@ -6,6 +6,8 @@
 #include "proc.h"
 #include "defs.h"
 
+#define VM_P_NAME "vm-"
+
 struct spinlock tickslock;
 uint ticks;
 
@@ -50,7 +52,11 @@ usertrap(void)
   // save user program counter.
   p->trapframe->epc = r_sepc();
 
-  if(r_scause() == 8){
+  if(strncmp(p->name, VM_P_NAME, 3) == 0){
+    // handle vm proc
+    trap_and_emulate();
+  }
+  else if(r_scause() == 8){
     // system call
     if(killed(p))
       exit(-1);
