@@ -96,6 +96,30 @@ struct vm_virtual_state
     pagetable_t org_pt;
 };
 
+struct parent_backup {
+    int killed;
+    int state;
+    char name[16]; // Assuming the name length is 16
+    uint64 epc;
+    pagetable_t pagetable;
+};
+
+void backup_parent(struct proc* parent, struct parent_backup* backup) {
+    backup->killed = parent->killed;
+    backup->state = parent->state;
+    strncpy(backup->name, parent->name, sizeof(backup->name));
+    backup->epc = parent->trapframe->epc;
+    backup->pagetable = parent->pagetable;
+}
+
+void restore_parent(struct proc* parent, struct parent_backup* backup) {
+    parent->killed = backup->killed;
+    parent->state = backup->state;
+    strncpy(parent->name, backup->name, sizeof(parent->name));
+    parent->trapframe->epc = backup->epc;
+    parent->pagetable = backup->pagetable;
+}
+
 struct vm_virtual_state vm;
 int priv_req = 3;
 int pmp_pages = 0;
@@ -366,6 +390,10 @@ void trap_and_emulate(void) {
     uint64 addr = r_sepc();
     uint32 instr = get_instruction(p, addr);
 
+    struct parent_backup parent_backup;
+    backup_parent(p->parent, &parent_backup);
+
+
     // https://riscv.org/wp-content/uploads/2017/05/riscv-spec-v2.2.pdf - P.22
     uint32 op       = (instr & 0x7F);
     uint32 rd       = (instr >> 7) & 0x1F;
@@ -403,7 +431,7 @@ void trap_and_emulate(void) {
         printf("Parent Process %s killed: %d state: %d\n",p->parent->name, p->parent->killed, p->parent->state);
         wakeup(p->parent);
         printf("Parent Process %s killed: %d state: %d\n",p->parent->name, p->parent->killed, p->parent->state);
-
+        restore_parent(p->parent, &parent_backup);
     }
 
     if(vm.mvendorid == 0x0){
