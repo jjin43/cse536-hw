@@ -401,7 +401,7 @@ void trap_and_emulate(void) {
     if(p->killed){
         printf("Child Process %s killed: %d\n", p->name, p->killed);
         printf("Parent Process %s killed: %d state: %d\n",p->parent->name, p->parent->killed, p->parent->state);
-        
+        wakeup(p->parent);
     }
 
     if(vm.mvendorid == 0x0){
