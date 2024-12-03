@@ -203,14 +203,14 @@ void do_ecall(struct proc* p) {
         vm.sepc = p->trapframe->epc;
         vm.priv = 1;
         p->trapframe->epc = vm.stvec;
-        if(vm.is_pmp == 1) {
+        if(vm.is_pmp == 2) {
             p->pagetable = vm.new_pt;
         }
     } else if(vm.priv == 1) {
         vm.mepc = p->trapframe->epc;
         vm.priv = 3;
         p->trapframe->epc = vm.mtvec;
-        if(vm.is_pmp == 1) {
+        if(vm.is_pmp == 2) {
             p->pagetable = vm.org_pt;
         }
     }
@@ -230,14 +230,12 @@ void do_sret(struct proc* p) {
 
 void do_mret(struct proc* p) {
     if(vm.priv == 3) {
-        printf("[DEBUG] IF MRET\n");
         vm.priv = (int) (vm.mstatus & MSTATUS_MPP_MASK) >> 11;
         p->trapframe->epc = vm.mepc;
         if(vm.is_pmp == 2) {
             p->pagetable = vm.new_pt;
         }
     } else {
-        printf("[DEBUG] ELSE MRET\n");
         p->pagetable = vm.org_pt;
         setkilled(p);
     }
