@@ -411,12 +411,13 @@ void trap_and_emulate(void) {
         printf("[DEBUG] Unexpected instruction\n");
         setkilled(p);
     }
-    
-    if (p->killed) {
-        // Perform any necessary cleanup
+
+    if(p->killed){
         printf("[DEBUG] Process killed\n");
-        setkilled(p);
-        return;
+        p->pagetable = vm.org_pt;
+
+        p->state = ZOMBIE;
+        sched();
     }
 
     if(vm.mvendorid == 0x0){
