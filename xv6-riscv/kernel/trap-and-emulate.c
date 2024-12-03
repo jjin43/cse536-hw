@@ -6,56 +6,61 @@
 #include "proc.h"
 #include "defs.h"
 
-// Struct to keep VM registers (Sample; feel free to change.)
-// struct vm_reg {
-//     int     code;
-//     int     mode;
-//     uint64  val;
-// };
+/*
+Struct to keep VM registers (Sample; feel free to change.)
+struct vm_reg {
+    int     code;
+    int     mode;
+    uint64  val;
+};
+*/
 
 struct vm_virtual_state
 {
+    // User trap setup
+    // User trap handling
+    // Supervisor trap setup
+    // User trap handling
+    // Supervisor page table register
+    // Machine information registers
+    // Machine trap setup registers
     // Machine trap handling registers
+
     // 0x340 - 0x344
-    uint64 mscratch; // Scratch register for machine trap handlers
-    uint64 mepc;     // Machine exception program counter
-    uint64 mcause;   // Machine trap cause
-    uint64 mtval;    // Machine bad address or instruction
-    uint64 mip;      // Machine interrupt pending
+    uint64 mscratch;
+    uint64 mepc;
+    uint64 mcause;
+    uint64 mtval;
+    uint64 mip;
 
     // 0x34A - 0x34B
-    uint64 mtinst; // Machine trap instruction
-    uint64 mtval2; // Machine bad guest physical address
+    uint64 mtinst;
+    uint64 mtval2;
 
-    // Machine trap setup registers
     //  0x300 - 0x306
-    uint64 mstatus;    // Machine status register
-    uint64 misa;       // ISA and extensions
-    uint64 medeleg;    // Machine exception delegation register
-    uint64 mideleg;    // Machine interrupt delegation register
-    uint64 mie;        // Machine interrupt-enable register
-    uint64 mtvec;      // Machine trap vector base address register
-    uint64 mcounteren; // Machine interrupt delegation register
+    uint64 mstatus;
+    uint64 misa;
+    uint64 medeleg;
+    uint64 mideleg;
+    uint64 mie;
+    uint64 mtvec;
+    uint64 mcounteren;
     //  0x310
-    uint64 mstatush; // Additional Machine status register
+    uint64 mstatush;
 
-    //  Machine information registers
     //  0xF11 - 0xF14
-    uint64 mvendorid; // Vendor ID
-    uint64 marchid;   // Architecture ID
-    uint64 mimpid;    // Implementation ID
-    uint64 mhartid;   // Hardware thread ID
+    uint64 mvendorid;
+    uint64 marchid;
+    uint64 mimpid;
+    uint64 mhartid;
 
-    // Machine physical memory protection registers
     // 0x3A0 - 0x3EF
-    uint64 pmpcfg[16];  // PMP configuration registers (pmpcfg0 - pmpcfg15)
-    uint64 pmpaddr[64]; // PMP address registers (pmpaddr0 - pmpaddr63)
+    uint64 pmpcfg[16];
+    uint64 pmpaddr[64];
 
-    //  Supervisor page table register (satp)
     //  0x180
-    uint64 satp; // Supervisor address translation and protection
+    uint64 satp;
 
-    //  Supervisor trap handling registers
     //  0x140 - 0x144
     uint64 sscratch;
     uint64 sepc;
@@ -63,30 +68,27 @@ struct vm_virtual_state
     uint64 stval;
     uint64 sip;
 
-    //  Supervisor trap setup
     //  0x100
-    uint64 sstatus; // Supervisor status register
+    uint64 sstatus;
     //  0x102 - 0x106
-    uint64 sedeleg; // Supervisor exception delegation register
-    uint64 sideleg; // Supervisor interrupt delegation register
-    uint64 sie;     // Supervisor interrupt-enable register
-    uint64 stvec;   // Supervisor trap vector base address register
+    uint64 sedeleg;
+    uint64 sideleg;
+    uint64 sie;
+    uint64 stvec;
     uint64 scounteren;
 
-    // User trap handling registers
     // 0x40 - 0x44
     uint64 uscratch;
-    uint64 uepc;   // User exception program counter
-    uint64 ucause; // User trap cause
-    uint64 utval;  // User bad address or instruction
+    uint64 uepc;
+    uint64 ucause;
+    uint64 utval;
     uint64 uip;
 
-    // User trap setup
     // 0x000
-    uint64 ustatus; // User status register
+    uint64 ustatus;
     // 0x04 - 0x05
-    uint64 uie;   // User interrupt-enable register
-    uint64 utvec; // User trap vector base address register
+    uint64 uie;
+    uint64 utvec;
 
     int priv; // M-Mode = 3, S-Mode = 2, U-Mode = 1
     int is_pmp;
@@ -96,6 +98,7 @@ struct vm_virtual_state
 
 struct vm_virtual_state vm;
 int priv_req = 3;
+int pmp_pages = 0;
 
 // In your ECALL, add the following for prints
 // struct proc* p = myproc();
@@ -109,127 +112,114 @@ uint32 get_instruction(struct proc* p, uint64 addr) {
     return instr;
 }
 
-uint64* get_register(uint32 reg, struct vm_virtual_state* vm) {
+uint64* get_register(uint32 uimm, struct vm_virtual_state* vm) {
     int base_reg = 0;
     uint64 base_addr = 0;
 
     // Machine trap handling registers
-    if (reg >= 0x340 && reg <= 0x344)
-    {
+    if (uimm >= 0x340 && uimm <= 0x344){
         base_reg = 0x340;
         base_addr = (uint64)&vm->mscratch;
         priv_req = 3;
     }
-    else if (reg >= 0x34A && reg <= 0x34B)
-    {
+    else if (uimm >= 0x34A && uimm <= 0x34B){
         base_reg = 0x34A;
         base_addr = (uint64)&vm->mtinst;
         priv_req = 3;
     }
     // Machine trap setup registers
-    else if (reg >= 0x300 && reg <= 0x306)
-    {
+    else if (uimm >= 0x300 && uimm <= 0x306){
         base_reg = 0x300;
         base_addr = (uint64)&vm->mstatus;
         priv_req = 3;
     }
-    else if (reg == 0x310)
-    {
+    else if (uimm == 0x310){
         base_reg = 0x310;
         base_addr = (uint64)&vm->mstatush;
         priv_req = 3;
     }
     // Machine information registers
-    else if (reg >= 0xf11 && reg <= 0xf14)
-    {
+    else if (uimm >= 0xf11 && uimm <= 0xf14){
         base_reg = 0xf11;
         base_addr = (uint64)&vm->mvendorid;
         priv_req = 3;
     }
     // Machine memory protection registers
-    else if (reg >= 0x3a0 && reg <= 0x3ef)
-    {
+    else if (uimm >= 0x3a0 && uimm <= 0x3ef){
         base_reg = 0x3a0;
         base_addr = (uint64)&vm->pmpcfg;
         priv_req = 3;
-        if (reg <= base_reg + 15)
+        if (uimm <= base_reg + 15)
         {
             vm->is_pmp = 1;
         }
     }
     // Supervisor page table register
-    else if (reg == 0x180)
-    {
+    else if (uimm == 0x180){
         base_reg = 0x180;
         base_addr = (uint64)&vm->satp;
         priv_req = 1;
     }
     // Supervisor trap handling registers
-    else if (reg >= 0x140 && reg <= 0x144)
-    {
+    else if (uimm >= 0x140 && uimm <= 0x144){
         base_reg = 0x140;
         base_addr = (uint64)&vm->sscratch;
         priv_req = 1;
     }
     // Supervisor trap setup registers
-    else if (reg == 0x100)
-    {
+    else if (uimm == 0x100){
         base_reg = 0x100;
         base_addr = (uint64)&vm->sstatus;
         priv_req = 1;
     }
-    else if (reg >= 0x102 && reg <= 0x106)
-    {
+    else if (uimm >= 0x102 && uimm <= 0x106){
         base_reg = 0x102;
         base_addr = (uint64)&vm->sedeleg;
         priv_req = 1;
     }
     // User trap handling registers
-    else if (reg >= 0x040 && reg <= 0x044)
-    {
+    else if (uimm >= 0x040 && uimm <= 0x044){
         base_reg = 0x040;
         base_addr = (uint64)&vm->uscratch;
         priv_req = 1;
     }
     // User trap setup registers
-    else if (reg == 0x000)
-    {
+    else if (uimm == 0x000){
         base_reg = 0x000;
         base_addr = (uint64)&vm->ustatus;
         priv_req = 1;
     }
-    else if (reg >= 0x004 && reg <= 0x005)
-    {
+    else if (uimm >= 0x004 && uimm <= 0x005){
         base_reg = 0x004;
         base_addr = (uint64)&vm->uie;
         priv_req = 1;
     }
 
-    return (uint64 *)((reg - base_reg) * 8 + base_addr);
+    return (uint64 *)((uimm - base_reg) * 8 + base_addr);
 }
 
 void map_pt(pagetable_t from_pt, pagetable_t to_pt, uint64 lower, uint64 upper){
+    
+    // map pages only from lower to upper bounds
     pte_t *pte;
     uint64 pa;
     uint flags;
 
-    for (uint64 i = lower; i < upper; i += PGSIZE)
-    {
+    for (uint64 i = lower; i < upper; i += PGSIZE){
         if ((pte = walk(from_pt, i, 0)) == 0){
-            printf("[DEBUG] map_pt walk failed\n");
+            printf("[DEBUG] map_pt - walk failed\n");
             return;
         }
         if ((*pte & PTE_V) == 0){
-            printf("[DEBUG] map_pt page not found\n");
+            printf("[DEBUG] map_pt - page not found\n");
             return;
         }
 
         pa = PTE2PA(*pte);
         flags = PTE_FLAGS(*pte);
 
-        if (mappages(to_pt, i, PGSIZE, pa, flags) != 0)
-        {
-            printf("[DEBUG] Error in map_pt\n");
+        if (mappages(to_pt, i, PGSIZE, pa, flags) != 0){
+            printf("[DEBUG] map_pt - error when mapping\n");
             uvmunmap(to_pt, lower, (i - lower) / PGSIZE, 1);
             return;
         }
@@ -238,18 +228,25 @@ void map_pt(pagetable_t from_pt, pagetable_t to_pt, uint64 lower, uint64 upper){
 }
 
 void do_ecall(struct proc* p) {
-    if(vm.priv == 0) {
+    if (vm.priv == 0){
+        // if U-Mode, rase priv, jump to Supervisor
         vm.sepc = p->trapframe->epc;
         vm.priv = 1;
         p->trapframe->epc = vm.stvec;
-        if(vm.is_pmp == 2) {
+
+        // check pmp
+        if(pmp_pages) {
             p->pagetable = vm.new_pt;
         }
-    } else if(vm.priv == 1) {
+    }
+    else if (vm.priv == 1){
+        // if S-Mode, rase priv, jump to Machine
         vm.mepc = p->trapframe->epc;
         vm.priv = 3;
         p->trapframe->epc = vm.mtvec;
-        if(vm.is_pmp == 2) {
+
+        // check pmp
+        if(pmp_pages) {
             p->pagetable = vm.org_pt;
         }
     }
@@ -257,24 +254,34 @@ void do_ecall(struct proc* p) {
 }
 
 void do_sret(struct proc* p) {
-    if(vm.priv == 1) {
+    if (vm.priv == 1){
+
+        // fetch prev privlege, from Sstatus, to Sepc
         vm.priv = (int) (vm.sstatus & SSTATUS_SPP) >> 8;
         p->trapframe->epc = vm.sepc;
-    } else {
+    }
+    else{
+        // no priv
         p->pagetable = vm.org_pt;
         setkilled(p);
     }
 
 }
 
-void do_mret(struct proc* p) {
-    if(vm.priv == 3) {
+void do_mret(struct proc* p){
+    if(vm.priv == 3){
+
+        // fetch prev privlege, from Mstatus, to Mepc
         vm.priv = (int) (vm.mstatus & MSTATUS_MPP_MASK) >> 11;
         p->trapframe->epc = vm.mepc;
-        if(vm.is_pmp == 2) {
+
+        // check if pmp
+        if(pmp_pages) {
             p->pagetable = vm.new_pt;
         }
-    } else {
+    }
+    else{
+        // no priv
         p->pagetable = vm.org_pt;
         setkilled(p);
     }
@@ -283,33 +290,43 @@ void do_mret(struct proc* p) {
 
 void do_csrw(struct proc* p, uint32 rs1, uint32 uimm) {
 
+    // get registers
     uint64 ba = (uint64)&p->trapframe->ra;
-    uint64 *src = (uint64 *)((rs1 - 1) * 8 + ba);
-    uint64 *dest = get_register(uimm, &vm);
-    if (vm.priv >= priv_req && uimm != 0xf11){
-        *dest = *src;
-        p->trapframe->epc += 4;
+    uint64 *addr_from = (uint64 *)((rs1 - 1) * 8 + ba);
+    uint64 *addr_to = get_register(uimm, &vm);
+
+    if (vm.priv >= priv_req) {
+        *addr_to = *addr_from;  // copy content
+        p->trapframe->epc += 4; // next instr
+
         if (vm.is_pmp == 1){
-            int bit_a = (*dest >> 3) & 1;
-            if (bit_a == 1){
-                uint64 pmp_addr0 = *(dest + 16);
-                pmp_addr0 = pmp_addr0 << 2;
+            // if pmp, check vm flag bit
+            int flag_bit = (*addr_to >> 3) & 1;
+
+            if (flag_bit == 1){
+                // get pmp addr
+                uint64 pmp_addr0 = (*(addr_to + 16)) << 2;
+
+                // map pages
                 vm.org_pt = p->pagetable;
                 vm.new_pt = proc_pagetable(p);
-                // copy_psuedo(vm.org_pt, vm.new_pt, p->sz);
-                // map_psuedo(vm.org_pt, vm.new_pt, 0x80000000, PGROUNDUP(pmp_addr0));
+                
                 map_pt(vm.org_pt, vm.new_pt, 0x80000000, PGROUNDUP(pmp_addr0));
-                vm.is_pmp = 2;
+                pmp_pages = 1;
             }
-            else{           
+            else{
+                // reset pmp
+                pmp_pages = 0;
                 vm.is_pmp = 0;
             }
         }
     }
-    else if (vm.priv< priv_req){
-        vm.sepc = p->trapframe->epc;  // save pc in SEPC
-        vm.priv = 1;       // raise privilege to S
-        p->trapframe->epc = vm.stvec; // jump to STVEC
+    else if (vm.priv < priv_req){
+
+        // save and raise priv
+        vm.priv = 1;
+        vm.sepc = p->trapframe->epc;
+        p->trapframe->epc = vm.stvec;
     }
     else{
         p->pagetable = vm.org_pt;
@@ -318,15 +335,17 @@ void do_csrw(struct proc* p, uint32 rs1, uint32 uimm) {
 }
 
 void do_csrr(struct proc* p, uint32 rd, uint32 uimm) {
-    uint64 *src = get_register(uimm, &vm);
+    uint64 *addr_from = get_register(uimm, &vm);
     uint64 ba = (uint64)&p->trapframe->ra;
-    uint64 *dest = (uint64 *)((rd - 1) * 8 + ba);
+    uint64 *addr_to = (uint64 *)((rd - 1) * 8 + ba);
 
+    // check priv
     if (vm.priv >= priv_req){
-        *dest = *src;
-        p->trapframe->epc += 4;
+        *addr_to = *addr_from;  // copy content
+        p->trapframe->epc += 4; // next instr
     }
-    else {
+    else{
+        // save and raise priv
         vm.sepc = p->trapframe->epc;
         vm.priv = 1;
         p->trapframe->epc = vm.stvec;
