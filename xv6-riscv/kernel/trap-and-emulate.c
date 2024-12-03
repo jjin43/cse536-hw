@@ -411,9 +411,15 @@ void trap_and_emulate(void) {
         printf("[DEBUG] Unexpected instruction\n");
         setkilled(p);
     }
+    
+    if (p->killed) {
+        // Perform any necessary cleanup
+        printf("[DEBUG] Process killed\n");
+        exit(-1); // Terminate the process
+    }
 
     if(vm.mvendorid == 0x0){
-        printf("[DEBUG] Graceful Shutdown\n");
+        // Graceful Shutdown when VendorID = 0
         setkilled(p);
     }
 }
