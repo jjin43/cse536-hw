@@ -399,7 +399,8 @@ void trap_and_emulate(void) {
     }
 
     if(p->killed){
-        printf( "Process %s killed: %d\n",p->parent->name, p->parent->killed);
+        printf("Child Process %s killed: %d\n", p->name, p->killed);
+        printf("Parent Process %s killed: %d\n",p->parent->name, p->parent->killed);
 
     }
 
