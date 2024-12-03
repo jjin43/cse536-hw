@@ -68,7 +68,7 @@ uint32 get_instruction(struct proc* p, uint64 addr) {
     return instr;
 }
 
-uint64 get_register(uint32 reg, struct vm_virtual_state* vm) {
+uint64* get_register(uint32 reg, struct vm_virtual_state* vm) {
     int base_reg = 0;
     uint64 base_addr = 0;
 
@@ -167,7 +167,7 @@ uint64 get_register(uint32 reg, struct vm_virtual_state* vm) {
     return (uint64 *)((reg - base_reg) * 8 + base_addr);
 }
 
-uint64 *get_vm_trapframe_register(uint32 reg, struct trapframe *tf)
+uint64* get_vm_trapframe_register(uint32 reg, struct trapframe *tf)
 {
     uint64 base_reg = 1;
     uint64 base_addr = (uint64)&tf->ra;
@@ -277,7 +277,7 @@ void do_csrw(struct proc* p, uint32 rs1, uint32 uimm) {
 }
 
 void do_csrr(struct proc* p, uint32 rd, uint32 uimm) {
-    uint64 *src = get_vm_privileged_register(uimm, &vm);
+    uint64 *src = get_register(uimm, &vm);
     uint64 *dest = get_vm_trapframe_register(rd, p->trapframe);
     if (vm.priv >= priv_req){
         *dest = *src;
