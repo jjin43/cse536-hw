@@ -20,14 +20,62 @@ struct vm_reg {
 struct vm_virtual_state
 {
     // User trap setup
-    // User trap handling
-    // Supervisor trap setup
-    // User trap handling
-    // Supervisor page table register
-    // Machine information registers
-    // Machine trap setup registers
-    // Machine trap handling registers
+    // 0x000
+    uint64 ustatus;
+    // 0x004 - 0x005
+    uint64 uie;
+    uint64 utvec;
 
+    // User trap handling
+    // 0x040 - 0x044
+    uint64 uscratch;
+    uint64 uepc;
+    uint64 ucause;
+    uint64 utval;
+    uint64 uip;
+
+    // Supervisor trap setup
+    // 0x100
+    uint64 sstatus;
+    // 0x102 - 0x106
+    uint64 sedeleg;
+    uint64 sideleg;
+    uint64 sie;
+    uint64 stvec;
+    uint64 scounteren;
+
+    // Supervisor trap handling
+    // 0x140 - 0x144
+    uint64 sscratch;
+    uint64 sepc;
+    uint64 scause;
+    uint64 stval;
+    uint64 sip;
+
+    // Supervisor page table register
+    // 0x180
+    uint64 satp;
+
+    // Machine information registers
+    // 0xF11 - 0xF14
+    uint64 mvendorid;
+    uint64 marchid;
+    uint64 mimpid;
+    uint64 mhartid;
+
+    // Machine trap setup registers
+    // 0x300 - 0x306
+    uint64 mstatus;
+    uint64 misa;
+    uint64 medeleg;
+    uint64 mideleg;
+    uint64 mie;
+    uint64 mtvec;
+    uint64 mcounteren;
+    // 0x310
+    uint64 mstatush;
+
+    // Machine trap handling registers
     // 0x340 - 0x344
     uint64 mscratch;
     uint64 mepc;
@@ -39,60 +87,13 @@ struct vm_virtual_state
     uint64 mtinst;
     uint64 mtval2;
 
-    //  0x300 - 0x306
-    uint64 mstatus;
-    uint64 misa;
-    uint64 medeleg;
-    uint64 mideleg;
-    uint64 mie;
-    uint64 mtvec;
-    uint64 mcounteren;
-    //  0x310
-    uint64 mstatush;
-
-    //  0xF11 - 0xF14
-    uint64 mvendorid;
-    uint64 marchid;
-    uint64 mimpid;
-    uint64 mhartid;
-
+    // Machine memory protection registers
     // 0x3A0 - 0x3EF
     uint64 pmpcfg[16];
     uint64 pmpaddr[64];
 
-    //  0x180
-    uint64 satp;
-
-    //  0x140 - 0x144
-    uint64 sscratch;
-    uint64 sepc;
-    uint64 scause;
-    uint64 stval;
-    uint64 sip;
-
-    //  0x100
-    uint64 sstatus;
-    //  0x102 - 0x106
-    uint64 sedeleg;
-    uint64 sideleg;
-    uint64 sie;
-    uint64 stvec;
-    uint64 scounteren;
-
-    // 0x40 - 0x44
-    uint64 uscratch;
-    uint64 uepc;
-    uint64 ucause;
-    uint64 utval;
-    uint64 uip;
-
-    // 0x000
-    uint64 ustatus;
-    // 0x04 - 0x05
-    uint64 uie;
-    uint64 utvec;
-
-    int priv; // M-Mode = 3, S-Mode = 2, U-Mode = 1
+    // M=3, S=2, U=1
+    int priv;
     int is_pmp;
     pagetable_t new_pt;
     pagetable_t org_pt;
@@ -117,17 +118,45 @@ uint32 get_instruction(struct proc* p, uint64 addr) {
 uint64* get_register(uint32 uimm, struct vm_virtual_state* vm) {
     int offset = 0;
     uint64 buf_addr = 0;
-
-    // Machine trap handling registers
-    if (uimm >= 0x340 && uimm <= 0x344){
-        offset = 0x340;
-        buf_addr = (uint64)&vm->mscratch;
-        priv_req = 3;
+    // User trap setup registers
+    if (uimm == 0x000){
+        offset = 0x000;
+        buf_addr = (uint64)&vm->ustatus;
+        priv_req = 1;
     }
-    else if (uimm >= 0x34A && uimm <= 0x34B){
-        offset = 0x34A;
-        buf_addr = (uint64)&vm->mtinst;
-        priv_req = 3;
+    else if (uimm >= 0x004 && uimm <= 0x005){
+        offset = 0x004;
+        buf_addr = (uint64)&vm->uie;
+        priv_req = 1;
+    }
+    // User trap handling registers
+    else if (uimm >= 0x040 && uimm <= 0x044){
+        offset = 0x040;
+        buf_addr = (uint64)&vm->uscratch;
+        priv_req = 1;
+    }
+    // Supervisor trap setup registers
+    else if (uimm == 0x100){
+        offset = 0x100;
+        buf_addr = (uint64)&vm->sstatus;
+        priv_req = 1;
+    }
+    else if (uimm >= 0x102 && uimm <= 0x106){
+        offset = 0x102;
+        buf_addr = (uint64)&vm->sedeleg;
+        priv_req = 1;
+    }
+    // Supervisor trap handling registers
+    else if (uimm >= 0x140 && uimm <= 0x144){
+        offset = 0x140;
+        buf_addr = (uint64)&vm->sscratch;
+        priv_req = 1;
+    }
+    // Supervisor page table register
+    else if (uimm == 0x180){
+        offset = 0x180;
+        buf_addr = (uint64)&vm->satp;
+        priv_req = 1;
     }
     // Machine trap setup registers
     else if (uimm >= 0x300 && uimm <= 0x306){
@@ -140,10 +169,15 @@ uint64* get_register(uint32 uimm, struct vm_virtual_state* vm) {
         buf_addr = (uint64)&vm->mstatush;
         priv_req = 3;
     }
-    // Machine information registers
-    else if (uimm >= 0xf11 && uimm <= 0xf14){
-        offset = 0xf11;
-        buf_addr = (uint64)&vm->mvendorid;
+    // Machine trap handling registers
+    else if (uimm >= 0x340 && uimm <= 0x344){
+        offset = 0x340;
+        buf_addr = (uint64)&vm->mscratch;
+        priv_req = 3;
+    }
+    else if (uimm >= 0x34A && uimm <= 0x34B){
+        offset = 0x34A;
+        buf_addr = (uint64)&vm->mtinst;
         priv_req = 3;
     }
     // Machine memory protection registers
@@ -158,45 +192,11 @@ uint64* get_register(uint32 uimm, struct vm_virtual_state* vm) {
             vm->is_pmp = 1;
         }
     }
-    // Supervisor page table register
-    else if (uimm == 0x180){
-        offset = 0x180;
-        buf_addr = (uint64)&vm->satp;
-        priv_req = 1;
-    }
-    // Supervisor trap handling registers
-    else if (uimm >= 0x140 && uimm <= 0x144){
-        offset = 0x140;
-        buf_addr = (uint64)&vm->sscratch;
-        priv_req = 1;
-    }
-    // Supervisor trap setup registers
-    else if (uimm == 0x100){
-        offset = 0x100;
-        buf_addr = (uint64)&vm->sstatus;
-        priv_req = 1;
-    }
-    else if (uimm >= 0x102 && uimm <= 0x106){
-        offset = 0x102;
-        buf_addr = (uint64)&vm->sedeleg;
-        priv_req = 1;
-    }
-    // User trap handling registers
-    else if (uimm >= 0x040 && uimm <= 0x044){
-        offset = 0x040;
-        buf_addr = (uint64)&vm->uscratch;
-        priv_req = 1;
-    }
-    // User trap setup registers
-    else if (uimm == 0x000){
-        offset = 0x000;
-        buf_addr = (uint64)&vm->ustatus;
-        priv_req = 1;
-    }
-    else if (uimm >= 0x004 && uimm <= 0x005){
-        offset = 0x004;
-        buf_addr = (uint64)&vm->uie;
-        priv_req = 1;
+    // Machine information registers
+    else if (uimm >= 0xf11 && uimm <= 0xf14){
+        offset = 0xf11;
+        buf_addr = (uint64)&vm->mvendorid;
+        priv_req = 3;
     }
 
     return (uint64 *)((uimm - offset) * 8 + buf_addr);
