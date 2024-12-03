@@ -20,8 +20,7 @@ struct vm_reg {
 struct vm_virtual_state
 {
     // User trap setup
-    // 0x000
-    uint64 ustatus;
+    uint64 ustatus;     // 0x000
     // 0x004 - 0x005
     uint64 uie;
     uint64 utvec;
@@ -35,8 +34,7 @@ struct vm_virtual_state
     uint64 uip;
 
     // Supervisor trap setup
-    // 0x100
-    uint64 sstatus;
+    uint64 sstatus;     // 0x100
     // 0x102 - 0x106
     uint64 sedeleg;
     uint64 sideleg;
@@ -53,8 +51,7 @@ struct vm_virtual_state
     uint64 sip;
 
     // Supervisor page table register
-    // 0x180
-    uint64 satp;
+    uint64 satp;    // 0x180
 
     // Machine information registers
     // 0xF11 - 0xF14
@@ -72,8 +69,8 @@ struct vm_virtual_state
     uint64 mie;
     uint64 mtvec;
     uint64 mcounteren;
-    // 0x310
-    uint64 mstatush;
+
+    uint64 mstatush;    // 0x310
 
     // Machine trap handling registers
     // 0x340 - 0x344
@@ -108,6 +105,7 @@ int pmp_pages = 0;
 // printf("(EC at %p)\n", p->trapframe->epc);
 
 uint32 get_instruction(struct proc* p, uint64 addr) {
+    // retrieve instr from user space
     char* p_addr = kalloc();
     copyin(p->pagetable, p_addr, addr, PGSIZE);
     uint32 instr = (*(uint32*) p_addr);
@@ -116,6 +114,9 @@ uint32 get_instruction(struct proc* p, uint64 addr) {
 }
 
 uint64* get_register(uint32 uimm, struct vm_virtual_state* vm) {
+
+    // retrieve registers based on offsets using section lead variable addr.
+    // !!! vm_virtual_state variables order matters, each section must retain curr order in each section.
     int offset = 0;
     uint64 buf_addr = 0;
     // User trap setup registers
@@ -398,8 +399,7 @@ void trap_and_emulate(void) {
     }
 
     if(p->killed){
-        printf("[DEBUG] Process killed\n");
-        p->parent->state = RUNNABLE;
+        printf( "Process %s killed: %d\n",p->parent->name, p->parent->killed);
 
     }
 
@@ -412,7 +412,7 @@ void trap_and_emulate(void) {
 void trap_and_emulate_init(void) {
     /* Create and initialize all state for the VM */
     memset(&vm, 0, sizeof(vm));
-    vm.priv = 3;
+    vm.priv = 3;    // init priv
     vm.mvendorid = 0x637365353336;  // "cse536" in hex
 
 }
