@@ -414,8 +414,7 @@ void trap_and_emulate(void) {
     
     if (p->killed) {
         // Perform any necessary cleanup
-        printf("[DEBUG] Process killed\n");
-        exit(-1); // Terminate the process
+        setkilled(p);
     }
 
     if(vm.mvendorid == 0x0){
