@@ -14,43 +14,124 @@
 // };
 
 // Keep the virtual state of the VM's privileged registers
-struct vm_virtual_state {
-    // User trap setup
-    // User trap handling
-    // Supervisor trap setup
-    // User trap handling
-    // Supervisor page table register
-    // Machine information registers
+// struct vm_virtual_state {
+//     // User trap setup
+//     // User trap handling
+//     // Supervisor trap setup
+//     // User trap handling
+//     // Supervisor page table register
+//     // Machine information registers
+//     // Machine trap setup registers
+
+
+//     uint64 mepc;
+//     uint64 mtvec;
+//     uint64 mstatus;
+//     uint64 mvendorid;
+//     uint64 mscratch;
+//     uint64 mtinst;
+//     uint64 mstatush;
+
+//     uint64 satp;
+//     uint64 sepc;
+//     uint64 sscratch;
+//     uint64 sstatus;
+//     uint64 sedeleg;
+//     uint64 stvec;
+
+//     uint64 uscratch;
+//     uint64 ustatus;
+//     uint64 uie;
+
+//     uint64 pmpcfg[16];
+
+//     int priv;
+//     int is_pmp;
+
+//     pagetable_t new_pt;
+//     pagetable_t org_pt; 
+
+// };
+
+struct vm_virtual_state
+{
+    // Machine trap handling registers
+    // 0x340 - 0x344
+    uint64 mscratch; // Scratch register for machine trap handlers
+    uint64 mepc;     // Machine exception program counter
+    uint64 mcause;   // Machine trap cause
+    uint64 mtval;    // Machine bad address or instruction
+    uint64 mip;      // Machine interrupt pending
+
+    // 0x34A - 0x34B
+    uint64 mtinst; // Machine trap instruction
+    uint64 mtval2; // Machine bad guest physical address
+
     // Machine trap setup registers
+    //  0x300 - 0x306
+    uint64 mstatus;    // Machine status register
+    uint64 misa;       // ISA and extensions
+    uint64 medeleg;    // Machine exception delegation register
+    uint64 mideleg;    // Machine interrupt delegation register
+    uint64 mie;        // Machine interrupt-enable register
+    uint64 mtvec;      // Machine trap vector base address register
+    uint64 mcounteren; // Machine interrupt delegation register
+    //  0x310
+    uint64 mstatush; // Additional Machine status register
 
+    //  Machine information registers
+    //  0xF11 - 0xF14
+    uint64 mvendorid; // Vendor ID
+    uint64 marchid;   // Architecture ID
+    uint64 mimpid;    // Implementation ID
+    uint64 mhartid;   // Hardware thread ID
 
-    uint64 mepc;
-    uint64 mtvec;
-    uint64 mstatus;
-    uint64 mvendorid;
-    uint64 mscratch;
-    uint64 mtinst;
-    uint64 mstatush;
+    // Machine physical memory protection registers
+    // 0x3A0 - 0x3EF
+    uint64 pmpcfg[16];  // PMP configuration registers (pmpcfg0 - pmpcfg15)
+    uint64 pmpaddr[64]; // PMP address registers (pmpaddr0 - pmpaddr63)
 
-    uint64 satp;
-    uint64 sepc;
+    //  Supervisor page table register (satp)
+    //  0x180
+    uint64 satp; // Supervisor address translation and protection
+
+    //  Supervisor trap handling registers
+    //  0x140 - 0x144
     uint64 sscratch;
-    uint64 sstatus;
-    uint64 sedeleg;
-    uint64 stvec;
+    uint64 sepc;
+    uint64 scause;
+    uint64 stval;
+    uint64 sip;
 
+    //  Supervisor trap setup
+    //  0x100
+    uint64 sstatus; // Supervisor status register
+    //  0x102 - 0x106
+    uint64 sedeleg; // Supervisor exception delegation register
+    uint64 sideleg; // Supervisor interrupt delegation register
+    uint64 sie;     // Supervisor interrupt-enable register
+    uint64 stvec;   // Supervisor trap vector base address register
+    uint64 scounteren;
+
+    // User trap handling registers
+    // 0x40 - 0x44
     uint64 uscratch;
-    uint64 ustatus;
-    uint64 uie;
+    uint64 uepc;   // User exception program counter
+    uint64 ucause; // User trap cause
+    uint64 utval;  // User bad address or instruction
+    uint64 uip;
 
-    uint64 pmpcfg[16];
+    // User trap setup
+    // 0x000
+    uint64 ustatus; // User status register
+    // 0x04 - 0x05
+    uint64 uie;   // User interrupt-enable register
+    uint64 utvec; // User trap vector base address register
 
-    int priv;
+    int priv; // M-Mode = 3, S-Mode = 2, U-Mode = 1
     int is_pmp;
-
     pagetable_t new_pt;
-    pagetable_t org_pt; 
-
+    pagetable_t org_pt;
 };
 
 struct vm_virtual_state vm;
