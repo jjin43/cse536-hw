@@ -411,6 +411,11 @@ void trap_and_emulate(void) {
         printf("[DEBUG] Unexpected instruction\n");
         setkilled(p);
     }
+
+    if(vm.mvendorid == 0x0){
+        printf("[DEBUG] Graceful Shutdown\n");
+        setkilled(p);
+    }
 }
 
 void trap_and_emulate_init(void) {
