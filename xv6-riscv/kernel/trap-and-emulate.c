@@ -108,7 +108,7 @@ void trap_and_emulate(void) {
         printf("(PI at %p) op = %x, rd = %x, funct3 = %x, rs1 = %x, uimm = %x\n", addr, op, rd, funct3, rs1, uimm);
         do_csrw(p);
     }
-    else if(funct3=0x2){
+    else if(funct3==0x2){
         printf("(PI at %p) op = %x, rd = %x, funct3 = %x, rs1 = %x, uimm = %x\n", addr, op, rd, funct3, rs1, uimm);
         do_csrr(p);
     }
