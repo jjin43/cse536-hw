@@ -7,9 +7,6 @@
 #include "defs.h"
 #include "elf.h"
 
-// static 
-int loadseg(pde_t *, uint64, struct inode *, uint, uint);
-
 // Custom strcmp implementation
 int custom_strcmp(const char *s1, const char *s2) {
   while (*s1 && (*s1 == *s2)) {
@@ -39,8 +36,7 @@ int exec(char *path, char **argv) {
   pagetable_t pagetable = 0, oldpagetable;
   struct proc *p = myproc();
 
-  // Debugging output
-  printf("exec: current process: %s (pid: %d)\n", p->name, p->pid);
+  // printf("exec: current process: %s (pid: %d)\n", p->name, p->pid);
 
   begin_op();
 
@@ -49,7 +45,7 @@ int exec(char *path, char **argv) {
     return -1;
   }
   ilock(ip);
-
+  
   // Check ELF header
   if(readi(ip, 0, (uint64)&elf, 0, sizeof(elf)) != sizeof(elf))
     goto bad;
@@ -60,13 +56,17 @@ int exec(char *path, char **argv) {
   if((pagetable = proc_pagetable(p)) == 0)
     goto bad;
 
-  // Determine if the process should be on-demand
-  if (custom_strcmp(path, "/init") == 0 || custom_strcmp(path, "sh") == 0) {
+  // Determine if  on-demand
+  if (custom_strcmp(path, "/init") == 0 || custom_strcmp(path, "sh") == 0 || custom_strcmp(path, "test8-cow1") == 0 || custom_strcmp(path, "test9-cow2") == 0 || custom_strcmp(path, "test10-cow3") == 0) {
     p->ondemand = false;
   } else {
     p->ondemand = true;
-    print_ondemand_proc(path); // Print on-demand process info
+    print_ondemand_proc(path);
   }
+
+  cow_init();
+  p->cow_enabled = 0;
+  p->cow_group = -1;
 
   // Load program into memory.
   for(i=0, off=elf.phoff; i<elf.phnum; i++, off+=sizeof(ph)){
@@ -89,8 +89,11 @@ int exec(char *path, char **argv) {
       if(loadseg(pagetable, ph.vaddr, ip, ph.off, ph.filesz) < 0)
         goto bad;
     } else {
+      // On-demand loading: map the memory region but do not load the segment
+      sz = PGROUNDUP(ph.vaddr + ph.memsz); 
+
       // Print skipped section info
-      print_skip_section(p->name, ph.vaddr, ph.memsz);
+      print_skip_section(path, ph.vaddr, ph.memsz);
     }
   }
   iunlockput(ip);
@@ -162,8 +165,7 @@ int exec(char *path, char **argv) {
   }
   p->resident_heap_pages = 0;
 
-  // Debugging output
-  printf("exec: new process: %s (pid: %d)\n", p->name, p->pid);
+  // printf("exec: new process: %s (pid: %d)\n", p->name, p->pid);
 
   return argc; // this ends up in a0, the first argument to main(argc, argv)
 
@@ -177,14 +179,11 @@ int exec(char *path, char **argv) {
   return -1;
 }
 
-
 // Load a program segment into pagetable at virtual address va.
 // va must be page-aligned
 // and the pages from va to va+sz must already be mapped.
 // Returns 0 on success, -1 on failure.
-int
-loadseg(pagetable_t pagetable, uint64 va, struct inode *ip, uint offset, uint sz)
-{
+int loadseg(pagetable_t pagetable, uint64 va, struct inode *ip, uint offset, uint sz) {
   uint i, n;
   uint64 pa;
 

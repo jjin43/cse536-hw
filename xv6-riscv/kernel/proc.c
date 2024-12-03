@@ -155,11 +155,47 @@ found:
 static void
 freeproc(struct proc *p)
 {
+  // Freetrapframe
   if(p->trapframe)
     kfree((void*)p->trapframe);
   p->trapframe = 0;
-  if(p->pagetable)
-    proc_freepagetable(p->pagetable, p->sz);
+  
+  // Free page table
+  if(p->pagetable){
+    // Handle CoW
+    if(p->cow_enabled){
+      decr_cow_group_count(p->cow_group);
+      
+      // If no more processes are using this CoW group, delete
+      if(get_cow_group_count(p->cow_group) == 0){
+        delete_cow_group(p->cow_group);
+        proc_freepagetable(p->pagetable, p->sz);
+      } else {
+        // else unmap the pages
+        uvmunmap(p->pagetable, TRAMPOLINE, 1, 0);
+        uvmunmap(p->pagetable, TRAPFRAME, 1, 0);
+        
+        pte_t *pte;
+        uint64 pa;
+        
+        // Walk process address space
+        for(int i = 0; i < p->sz; i += PGSIZE){
+          pte = walk(p->pagetable, i, 0);
+          pa = PTE2PA(*pte);
+          
+          // Unmap shared memory pages
+          if(is_shmem(p->cow_group, pa)){
+            uvmunmap(p->pagetable, i, 1, 0);
+          } else {
+            uvmunmap(p->pagetable, i, 1, 1);
+          }
+        }
+      }
+    } else {
+      // Case NOT CoW
+      proc_freepagetable(p->pagetable, p->sz);
+    }
+  } 
   p->pagetable = 0;
   p->sz = 0;
   p->pid = 0;
@@ -286,8 +322,14 @@ growproc(int n)
 
   sz = p->sz;
   if(n > 0){
-    if((sz = uvmalloc(p->pagetable, sz, sz + n, PTE_W)) == 0) {
-      return -1;
+    if (p->ondemand) {
+      track_heap(p, sz, n / PGSIZE);
+      print_skip_heap_region(p->name, sz, n / PGSIZE);
+      p->sz = sz + n;
+    } else {
+      if((sz = uvmalloc(p->pagetable, sz, sz + n, PTE_W | PTE_X | PTE_R | PTE_U)) == 0)
+        return -1;
+      p->sz = sz;
     }
   } else if(n < 0){
     sz = uvmdealloc(p->pagetable, sz, sz + n);
@@ -311,6 +353,34 @@ fork(int cow_enabled)
   }
 
   /* CSE 536: (3.1) Modify fork() to handle CoW */
+  if(cow_enabled == 1){
+    // Copy page table entries, parent to child
+    uvmcopy_cow(p->pagetable, np->pagetable, p->sz);
+    
+    // Initialize parent cow group if needed
+    if(!p->cow_enabled){
+      p->cow_group = p->pid;
+      p->cow_enabled = true;
+      
+      cow_group_init(p->cow_group);
+      incr_cow_group_count(p->cow_group);
+    }
+    
+    // Assign child to the same CoW group
+    np->cow_enabled = 1;
+    np->cow_group = p->cow_group;
+    incr_cow_group_count(p->cow_group); // Increment the reference count for the CoW group
+    
+    pte_t *pte;
+    uint64 pa;
+    
+    // Add parent's shared memory pages to the CoW group
+    for(int i = 0; i < p->sz; i += PGSIZE){
+      pte = walk(p->pagetable, i, 0);
+      pa = PTE2PA(*pte);
+      add_shmem(p->cow_group, pa); // Add physical address to shared memory list
+    }
+  }
   
   // Currently fork() does not handle the case for when CoW is enable
   // You will have to implement the same
@@ -320,7 +390,7 @@ fork(int cow_enabled)
   // implement and call the uvm_copy() function defined in cow.c
 
   // Copy user memory from parent to child.
-  if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
+  else if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
     freeproc(np);
     release(&np->lock);
     return -1;

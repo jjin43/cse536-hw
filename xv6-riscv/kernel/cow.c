@@ -24,7 +24,6 @@ struct cow_group cow_group[NPROC];
 struct cow_group* get_cow_group(int group) {
     if(group == -1)
         return 0;
-
     for(int i = 0; i < NPROC; i++) {
         if(cow_group[i].group == group)
             return &cow_group[i];
@@ -70,7 +69,6 @@ void add_shmem(int group, uint64 pa) {
 int is_shmem(int group, uint64 pa) {
     if(group == -1)
         return 0;
-
     uint64 *shmem = get_cow_group(group)->shmem;
     for(int i = 0; i < SHMEM_MAX; i++) {
         if(shmem[i] == 0)
@@ -92,22 +90,87 @@ void cow_init() {
 }
 
 int uvmcopy_cow(pagetable_t old, pagetable_t new, uint64 sz) {
-    
     /* CSE 536: (2.6.1) Handling Copy-on-write fork() */
-
-    // Copy user vitual memory from old(parent) to new(child) process
+    
+    pte_t *pte;
+    uint64 pa, i;
+    uint flags;
 
     // Map pages as Read-Only in both the processes
-
+    for(i = 0; i < sz; i += PGSIZE){
+        if((pte = walk(old, i, 0)) == 0)
+            panic("uvmcopy: pte should exist");
+        if((*pte & PTE_V) == 0)
+            panic("uvmcopy: page not present");
+        pa = PTE2PA(*pte);
+        // removing write permission
+        flags = PTE_FLAGS(*pte) & (~PTE_W);
+    
+        mappages(new, i, PGSIZE, pa, flags);
+        uvmunmap(old, i, 1, 0);
+        mappages(old, i, PGSIZE, pa, flags);
+    }
     return 0;
 }
 
-void copy_on_write() {
+int copy_on_write(struct proc* p, uint64 fault_addr) {
     /* CSE 536: (2.6.2) Handling Copy-on-write */
-
-    // Allocate a new page 
     
-    // Copy contents from the shared page to the new page
+    pte_t *pte;
+    uint64 pa;
+    uint flags;
+    
+    // Allocate a new page 
+    pte = walk(p->pagetable, fault_addr, 0);
+    if (pte == 0 || (*pte & PTE_V) == 0)
+        panic("copy_on_write: pte should exist and be valid");
+    
+    pa = PTE2PA(*pte);
+    // Check if the page is shared
+    if(is_shmem(p->cow_group, pa)){
+        char *mem = kalloc();
+        if (mem == 0)
+            panic("copy_on_write: kalloc failed");
 
-    // Map the new page in the faulting process's page table with write permissions
+        // Copy contents from the shared page to the new page
+        memmove(mem, (char*)pa, PGSIZE);
+
+        // Map new page in the faulting process's page table with write perm
+        flags = PTE_FLAGS(*pte) | PTE_W;
+        uvmunmap(p->pagetable, fault_addr, 1, 0);
+        
+        if(mappages(p->pagetable, fault_addr, PGSIZE, (uint64)mem, flags) != 0){
+            kfree(mem);
+            panic("copy_on_write: mappages failed");
+        }
+        
+        // Add new page to the shared memory list
+        add_shmem(p->cow_group, (uint64)mem);
+        
+        print_copy_on_write(p, fault_addr);
+        
+        return 1;
+    }
+    return 0;
+}
+
+
+// Helper functions for clearing a cow_group
+void delete_cow_group(int pid){
+
+  for(int i=0; i<NPROC; i++){
+    
+    if(cow_group[i].group == pid){
+      cow_group[i].count = 0;
+      cow_group[i].group = -1;
+      
+      for(int j=0; j<SHMEM_MAX; j++){
+
+	    cow_group[i].shmem[j] = 0;      
+      }
+      
+      return;
+    }
+  }
+
 }

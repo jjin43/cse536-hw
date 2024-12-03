@@ -47,12 +47,15 @@ usertrap(void)
 
   struct proc *p = myproc();
 
-  /* CSE 536: (2.2) Intercept page faults and redirect them to the fault handler. */
-
   // save user program counter.
   p->trapframe->epc = r_sepc();
+
+  uint64 scause = r_scause();
   
-  if(r_scause() == 8){
+  if(scause == 0xf || scause == 0xd || scause == 0xc){
+    // Page fault exceptions
+    page_fault_handler();
+  } else if(scause == 8){
     // system call
 
     if(killed(p))
@@ -67,10 +70,11 @@ usertrap(void)
     intr_on();
 
     syscall();
-  } else if((which_dev = devintr()) != 0){
+  } else if((which_dev = devintr()) != 0 ){
     // ok
-  } else {
-    printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
+
+  } else{
+    printf("usertrap(): unexpected scause %p pid=%d\n", scause, p->pid);
     printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
     setkilled(p);
   }
@@ -223,4 +227,3 @@ devintr()
     return 0;
   }
 }
-
