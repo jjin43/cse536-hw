@@ -13,46 +13,6 @@
 //     uint64  val;
 // };
 
-// Keep the virtual state of the VM's privileged registers
-// struct vm_virtual_state {
-//     // User trap setup
-//     // User trap handling
-//     // Supervisor trap setup
-//     // User trap handling
-//     // Supervisor page table register
-//     // Machine information registers
-//     // Machine trap setup registers
-
-
-//     uint64 mepc;
-//     uint64 mtvec;
-//     uint64 mstatus;
-//     uint64 mvendorid;
-//     uint64 mscratch;
-//     uint64 mtinst;
-//     uint64 mstatush;
-
-//     uint64 satp;
-//     uint64 sepc;
-//     uint64 sscratch;
-//     uint64 sstatus;
-//     uint64 sedeleg;
-//     uint64 stvec;
-
-//     uint64 uscratch;
-//     uint64 ustatus;
-//     uint64 uie;
-
-//     uint64 pmpcfg[16];
-
-//     int priv;
-//     int is_pmp;
-
-//     pagetable_t new_pt;
-//     pagetable_t org_pt; 
-
-// };
-
 struct vm_virtual_state
 {
     // Machine trap handling registers
@@ -248,31 +208,29 @@ uint64* get_register(uint32 reg, struct vm_virtual_state* vm) {
     return (uint64 *)((reg - base_reg) * 8 + base_addr);
 }
 
-uint64* get_vm_trapframe_register(uint32 reg, struct trapframe *tf)
-{
-    uint64 base_reg = 1;
-    uint64 base_addr = (uint64)&tf->ra;
-    return (uint64 *)((reg - base_reg) * 8 + base_addr);
-}
-
-void map_pt(pagetable_t old, pagetable_t new, uint64 lowerbound, uint64 upperbound){
+void map_pt(pagetable_t from_pt, pagetable_t to_pt, uint64 lower, uint64 upper){
     pte_t *pte;
-    uint64 pa, i;
+    uint64 pa;
     uint flags;
 
-    for (i = lowerbound; i < upperbound; i += PGSIZE)
+    for (uint64 i = lower; i < upper; i += PGSIZE)
     {
-        if ((pte = walk(old, i, 0)) == 0)
-            panic("uvmcopy: pte should exist");
-        if ((*pte & PTE_V) == 0)
-            panic("uvmcopy: page not present");
+        if ((pte = walk(from_pt, i, 0)) == 0){
+            printf("[DEBUG] map_pt walk failed\n");
+            return;
+        }
+        if ((*pte & PTE_V) == 0){
+            printf("[DEBUG] map_pt page not found\n");
+            return;
+        }
+
         pa = PTE2PA(*pte);
         flags = PTE_FLAGS(*pte);
 
-        if (mappages(new, i, PGSIZE, pa, flags) != 0)
+        if (mappages(to_pt, i, PGSIZE, pa, flags) != 0)
         {
             printf("[DEBUG] Error in map_pt\n");
-            uvmunmap(new, lowerbound, (i - lowerbound) / PGSIZE, 1);
+            uvmunmap(to_pt, lower, (i - lower) / PGSIZE, 1);
             return;
         }
     }
@@ -324,7 +282,9 @@ void do_mret(struct proc* p) {
 }
 
 void do_csrw(struct proc* p, uint32 rs1, uint32 uimm) {
-    uint64 *src = get_vm_trapframe_register(rs1, p->trapframe);
+
+    uint64 ba = (uint64)&p->trapframe->ra;
+    uint64 *src = (uint64 *)((rs1 - 1) * 8 + ba);
     uint64 *dest = get_register(uimm, &vm);
     if (vm.priv >= priv_req && uimm != 0xf11){
         *dest = *src;
@@ -359,15 +319,17 @@ void do_csrw(struct proc* p, uint32 rs1, uint32 uimm) {
 
 void do_csrr(struct proc* p, uint32 rd, uint32 uimm) {
     uint64 *src = get_register(uimm, &vm);
-    uint64 *dest = get_vm_trapframe_register(rd, p->trapframe);
+    uint64 ba = (uint64)&p->trapframe->ra;
+    uint64 *dest = (uint64 *)((rd - 1) * 8 + ba);
+
     if (vm.priv >= priv_req){
         *dest = *src;
         p->trapframe->epc += 4;
     }
     else {
-        vm.sepc = p->trapframe->epc;  // save pc in SEPC
-        vm.priv = 1;       // raise privilege to S
-        p->trapframe->epc = vm.stvec; // jump to STVEC
+        vm.sepc = p->trapframe->epc;
+        vm.priv = 1;
+        p->trapframe->epc = vm.stvec;
     }
 
 }
