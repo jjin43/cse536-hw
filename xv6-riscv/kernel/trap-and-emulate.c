@@ -414,10 +414,8 @@ void trap_and_emulate(void) {
 
     if(p->killed){
         printf("[DEBUG] Process killed\n");
-        p->pagetable = vm.org_pt;
+        p->parent->state = RUNNABLE;
 
-        p->state = ZOMBIE;
-        sched();
     }
 
     if(vm.mvendorid == 0x0){
