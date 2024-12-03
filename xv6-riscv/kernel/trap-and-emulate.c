@@ -15,6 +15,8 @@ struct vm_reg {
 };
 */
 
+#define BASE_ADDR 0x80000000
+
 struct vm_virtual_state
 {
     // User trap setup
@@ -113,89 +115,91 @@ uint32 get_instruction(struct proc* p, uint64 addr) {
 }
 
 uint64* get_register(uint32 uimm, struct vm_virtual_state* vm) {
-    int base_reg = 0;
-    uint64 base_addr = 0;
+    int offset = 0;
+    uint64 buf_addr = 0;
 
     // Machine trap handling registers
     if (uimm >= 0x340 && uimm <= 0x344){
-        base_reg = 0x340;
-        base_addr = (uint64)&vm->mscratch;
+        offset = 0x340;
+        buf_addr = (uint64)&vm->mscratch;
         priv_req = 3;
     }
     else if (uimm >= 0x34A && uimm <= 0x34B){
-        base_reg = 0x34A;
-        base_addr = (uint64)&vm->mtinst;
+        offset = 0x34A;
+        buf_addr = (uint64)&vm->mtinst;
         priv_req = 3;
     }
     // Machine trap setup registers
     else if (uimm >= 0x300 && uimm <= 0x306){
-        base_reg = 0x300;
-        base_addr = (uint64)&vm->mstatus;
+        offset = 0x300;
+        buf_addr = (uint64)&vm->mstatus;
         priv_req = 3;
     }
     else if (uimm == 0x310){
-        base_reg = 0x310;
-        base_addr = (uint64)&vm->mstatush;
+        offset = 0x310;
+        buf_addr = (uint64)&vm->mstatush;
         priv_req = 3;
     }
     // Machine information registers
     else if (uimm >= 0xf11 && uimm <= 0xf14){
-        base_reg = 0xf11;
-        base_addr = (uint64)&vm->mvendorid;
+        offset = 0xf11;
+        buf_addr = (uint64)&vm->mvendorid;
         priv_req = 3;
     }
     // Machine memory protection registers
     else if (uimm >= 0x3a0 && uimm <= 0x3ef){
-        base_reg = 0x3a0;
-        base_addr = (uint64)&vm->pmpcfg;
+        offset = 0x3a0;
+        // pmpcfg[0]
+        buf_addr = (uint64)&vm->pmpcfg;
         priv_req = 3;
-        if (uimm <= base_reg + 15)
-        {
+
+        // check if pmp enabled
+        if (uimm <= offset + 15){
             vm->is_pmp = 1;
         }
     }
     // Supervisor page table register
     else if (uimm == 0x180){
-        base_reg = 0x180;
-        base_addr = (uint64)&vm->satp;
+        offset = 0x180;
+        buf_addr = (uint64)&vm->satp;
         priv_req = 1;
     }
     // Supervisor trap handling registers
     else if (uimm >= 0x140 && uimm <= 0x144){
-        base_reg = 0x140;
-        base_addr = (uint64)&vm->sscratch;
+        offset = 0x140;
+        buf_addr = (uint64)&vm->sscratch;
         priv_req = 1;
     }
     // Supervisor trap setup registers
     else if (uimm == 0x100){
-        base_reg = 0x100;
-        base_addr = (uint64)&vm->sstatus;
+        offset = 0x100;
+        buf_addr = (uint64)&vm->sstatus;
         priv_req = 1;
     }
     else if (uimm >= 0x102 && uimm <= 0x106){
-        base_reg = 0x102;
-        base_addr = (uint64)&vm->sedeleg;
+        offset = 0x102;
+        buf_addr = (uint64)&vm->sedeleg;
         priv_req = 1;
     }
     // User trap handling registers
     else if (uimm >= 0x040 && uimm <= 0x044){
-        base_reg = 0x040;
-        base_addr = (uint64)&vm->uscratch;
+        offset = 0x040;
+        buf_addr = (uint64)&vm->uscratch;
         priv_req = 1;
     }
     // User trap setup registers
     else if (uimm == 0x000){
-        base_reg = 0x000;
-        base_addr = (uint64)&vm->ustatus;
+        offset = 0x000;
+        buf_addr = (uint64)&vm->ustatus;
         priv_req = 1;
     }
     else if (uimm >= 0x004 && uimm <= 0x005){
-        base_reg = 0x004;
-        base_addr = (uint64)&vm->uie;
+        offset = 0x004;
+        buf_addr = (uint64)&vm->uie;
         priv_req = 1;
     }
 
-    return (uint64 *)((uimm - base_reg) * 8 + base_addr);
+    return (uint64 *)((uimm - offset) * 8 + buf_addr);
 }
 
 void map_pt(pagetable_t from_pt, pagetable_t to_pt, uint64 lower, uint64 upper){
@@ -305,13 +309,13 @@ void do_csrw(struct proc* p, uint32 rs1, uint32 uimm) {
 
             if (flag_bit == 1){
                 // get pmp addr
-                uint64 pmp_addr0 = (*(addr_to + 16)) << 2;
+                uint64 pmp_addr = (*(addr_to + 16)) << 2;
 
                 // map pages
                 vm.org_pt = p->pagetable;
                 vm.new_pt = proc_pagetable(p);
                 
-                map_pt(vm.org_pt, vm.new_pt, 0x80000000, PGROUNDUP(pmp_addr0));
+                map_pt(vm.org_pt, vm.new_pt, BASE_ADDR, PGROUNDUP(pmp_addr));
                 pmp_pages = 1;
             }
             else{
