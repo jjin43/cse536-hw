@@ -17,6 +17,20 @@ struct vm_reg {
 
 #define BASE_ADDR 0x80000000
 
+
+/*  
+    Data structure and register retrival method adapated from Rahil-Parikh
+    https://github.com/Rahil-Parikh/operating_system_xv6/tree/4_trap_emulate_virtualization
+
+
+    The uint64 variables directly stores register values, immitating the actual registers.
+    Registers that are supposingly ajacent in memory (same section) are declared next to each other.
+    Then, we can just offset from the addr of the first variable in each section to retrieve the register.
+    This way we don't need a separate struct to store the registers and codes,
+    and we don't need a "strict" order of the registers in the state struct, 
+    as long as each section is in the same order.
+*/
+
 struct vm_virtual_state
 {
     // User trap setup
